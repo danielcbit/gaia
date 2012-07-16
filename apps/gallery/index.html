@@ -1,25 +1,28 @@
 <!DOCTYPE html>
-<html manifest="manifest.appcache">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="pragma" content="no-cache" />
     <title>Gallery</title>
     <link rel="stylesheet" href="style/gallery.css" type="text/css" />
     <link rel="resource" type="application/l10n" href="locale/l10n.ini" />
-    <!-- Compatibility -->
-    <script type="text/javascript">
-      if (document.location.protocol === 'file:') {
+    <script>
+    // The following code loads a shared WebAPI shim from webapi.js
+    (function webapiJSLoader() {
+      var protocol = document.location.protocol;
+      if (protocol === 'file:') {
         var paths = document.location.pathname.split('/');
         paths.pop();
         paths.pop();
         paths.pop();
-        var src = 'file://' + paths.join('/') + '/webapi.js';
+        var src = protocol + '//' + paths.join('/') + '/webapi.js';
       } else {
         var host = document.location.host;
         var domain = host.replace(/(^[\w\d]+\.)?([\w\d]+\.[a-z]+)/, '$2');
-        var src = 'http://' + domain + '/webapi.js';
+        var src = protocol + '//system.' + domain + '/js/webapi.js';
       }
       document.write('<script src="' + src + '"><\/script>');
+    })();
     </script>
     <script type="text/javascript" defer src="js/MediaDB.js"></script>
     <script type="text/javascript" defer src="js/MetadataParser.js"></script>
@@ -43,9 +46,9 @@
     <!-- Photos inserted here -->
     <div id="photos" class="hidden">
       <!-- the current photo plus next and previous waiting in the wings -->
-      <div class="photoFrame previousPhoto"></div>
-      <div class="photoFrame currentPhoto"></div>
-      <div class="photoFrame nextPhoto"></div>
+      <div class="photoFrame previousPhoto"><img></div>
+      <div class="photoFrame currentPhoto"><img></div>
+      <div class="photoFrame nextPhoto"><img></div>
     </div>
 
     <div id="player-controls" class="hidden">

@@ -32,6 +32,9 @@ var Browser = {
     this.content = document.getElementById('browser-content');
     this.awesomescreen = document.getElementById('awesomescreen');
     this.history = document.getElementById('history');
+    this.bookmarks = document.getElementById('bookmarks');
+    this.bookmarksTab = document.getElementById('bookmarks-tab');
+    this.historyTab = document.getElementById('history-tab');
     this.backButton = document.getElementById('back-button');
     this.forwardButton = document.getElementById('forward-button');
     this.bookmarkButton = document.getElementById('bookmark-button');
@@ -55,8 +58,12 @@ var Browser = {
     this.bookmarkButton.addEventListener('click', this.bookmark.bind(this));
     this.urlInput.addEventListener('focus', this.urlFocus.bind(this));
     this.history.addEventListener('click', this.followLink.bind(this));
+    this.bookmarks.addEventListener('click', this.followLink.bind(this));
     this.tabsBadge.addEventListener('click',
       this.handleTabsBadgeClicked.bind(this));
+    this.bookmarksTab.addEventListener('click',
+      this.showBookmarksTab.bind(this));
+    this.historyTab.addEventListener('click', this.showHistoryTab.bind(this));
 
     this.tabsSwipeMngr.browser = this;
     ['mousedown', 'pan', 'tap', 'swipe'].forEach(function(evt) {
@@ -153,7 +160,7 @@ var Browser = {
         tab.loading = false;
         if (isCurrentTab) {
           this.throbber.classList.remove('loading');
-          this.urlInput.value = tab.title;
+          this.urlInput.value = tab.title || tab.url;
           this.setUrlButtonMode(this.REFRESH);
         }
 
@@ -224,6 +231,16 @@ var Browser = {
           this.updateSecurityIcon();
         }
         break;
+
+      case 'mozbrowseropenwindow':
+        this.handleWindowOpen(evt);
+        break;
+
+      case 'mozbrowserclose':
+        this.handleWindowClose(tab.id);
+        this.setTabVisibility(this.currentTab, true);
+        this.updateTabsCount();
+        break;
       }
     }).bind(this);
   },
@@ -242,6 +259,32 @@ var Browser = {
           this.urlInput.blur();
         }
     }
+  },
+
+  handleWindowOpen: function browser_handleWindowOpen(evt) {
+    var url = evt.detail.url;
+    var frame = evt.detail.frameElement;
+    var tab = this.createTab(url, frame);
+
+    this.hideCurrentTab();
+    this.selectTab(tab);
+    // The frame will already be loading once we recieve it, which
+    // means we need to assume it is loading
+    this.currentTab.loading = true;
+    this.setTabVisibility(this.currentTab, true);
+    this.updateTabsCount();
+  },
+
+  handleWindowClose: function browser_handleWindowClose(tabId) {
+    if (!tabId)
+      return false;
+
+    this.deleteTab(tabId);
+    return true;
+  },
+
+  updateTabsCount: function browser_updateTabsCount() {
+    this.tabsBadge.innerHTML = Object.keys(this.tabs).length + '&#x203A;';
   },
 
   updateSecurityIcon: function browser_updateSecurityIcon() {
@@ -327,6 +370,11 @@ var Browser = {
   },
 
   refreshButtons: function browser_refreshButtons() {
+    // When handling window.open we may hit this code
+    // before canGoBack etc has been applied to the frame
+    if (!this.currentTab.dom.getCanGoBack)
+      return;
+
     this.currentTab.dom.getCanGoBack().onsuccess = (function(e) {
       this.backButton.disabled = !e.target.result;
     }).bind(this);
@@ -367,6 +415,14 @@ var Browser = {
     }
   },
 
+  showHistoryTab: function browser_showHistoryTab() {
+    this.bookmarksTab.classList.remove('selected');
+    this.bookmarks.classList.remove('selected');
+    this.historyTab.classList.add('selected');
+    this.history.classList.add('selected');
+    Places.getHistory(this.showGlobalHistory.bind(this));
+  },
+
   showGlobalHistory: function browser_showGlobalHistory(visits) {
     this.history.innerHTML = '';
     var thresholds = [
@@ -401,7 +457,7 @@ var Browser = {
            this.drawHistoryHeading(threshold, timestamp);
          }
       }
-      this.drawHistoryEntry(visit);
+      this.drawAwesomescreenListItem(this.history.lastChild, visit);
     }, this);
   },
 
@@ -414,25 +470,27 @@ var Browser = {
     return newThreshold;
   },
 
-  drawHistoryEntry: function browser_drawHistoryEntry(visit) {
+  drawAwesomescreenListItem: function browser_drawAwesomescreenListItem(list,
+    data) {
     var entry = document.createElement('li');
     var link = document.createElement('a');
     var title = document.createElement('span');
     var url = document.createElement('small');
-    link.href = visit.uri;
-    title.textContent = visit.title ? visit.title : visit.uri;
-    url.textContent = visit.uri;
+    entry.setAttribute('role', 'listitem');
+    link.href = data.uri;
+    title.textContent = data.title ? data.title : data.uri;
+    url.textContent = data.uri;
     link.appendChild(title);
     link.appendChild(url);
     entry.appendChild(link);
-    this.history.lastChild.appendChild(entry);
+    list.appendChild(entry);
 
-    if (!visit.iconUri) {
+    if (!data.iconUri) {
       link.style.backgroundImage = 'url(' + this.DEFAULT_FAVICON + ')';
       return;
     }
 
-    Places.db.getIcon(visit.iconUri, (function(icon) {
+    Places.db.getIcon(data.iconUri, (function(icon) {
       if (icon && icon.failed != true && icon.data) {
         var imgUrl = window.URL.createObjectURL(icon.data);
         link.style.backgroundImage = 'url(' + imgUrl + ')';
@@ -470,15 +528,34 @@ var Browser = {
     }
 
     var textNode = document.createTextNode(text);
-    h3.appendChild(textNode);
     var ul = document.createElement('ul');
+    ul.setAttribute('role', 'listbox');
+    h3.appendChild(textNode);
     this.history.appendChild(h3);
     this.history.appendChild(ul);
   },
 
+  showBookmarksTab: function browser_showHistoryTab() {
+    this.historyTab.classList.remove('selected');
+    this.history.classList.remove('selected');
+    this.bookmarksTab.classList.add('selected');
+    this.bookmarks.classList.add('selected');
+    Places.getBookmarks(this.showBookmarks.bind(this));
+  },
+
+  showBookmarks: function browser_showBookmarks(bookmarks) {
+    this.bookmarks.innerHTML = '';
+    var list = document.createElement('ul');
+    list.setAttribute('role', 'listbox');
+    this.bookmarks.appendChild(list);
+    bookmarks.forEach(function browser_processBookmark(data) {
+      this.drawAwesomescreenListItem(list, data);
+    }, this);
+  },
+
   openInNewTab: function browser_openInNewTab(url) {
     this.createTab(url);
-    this.tabsBadge.innerHTML = Object.keys(this.tabs).length;
+    this.updateTabsCount();
   },
 
   showContextMenu: function browser_showContextMenu(evt) {
@@ -581,18 +658,28 @@ var Browser = {
     tab.dom.style.top = '0px';
   },
 
-  createTab: function browser_createTab(url) {
-    var iframe = document.createElement('iframe');
-    var browserEvents = ['loadstart', 'loadend', 'locationchange',
-                         'titlechange', 'iconchange', 'contextmenu',
-                         'securitychange'];
-    iframe.mozbrowser = true;
-    // FIXME: content shouldn't control this directly
-    iframe.setAttribute('remote', 'true');
-    iframe.style.top = '-999px';
-    if (url) {
+  createTab: function browser_createTab(url, iframe) {
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.mozbrowser = true;
+
+      if (url) {
+        iframe.setAttribute('src', url);
+      }
+    } else {
+      // FIXME: Remove this once
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=769182
+      // has landed
       iframe.setAttribute('src', url);
     }
+
+    var browserEvents = ['loadstart', 'loadend', 'locationchange',
+                         'titlechange', 'iconchange', 'contextmenu',
+                         'securitychange', 'openwindow', 'close'];
+    iframe.style.top = '-999px';
+
+    // FIXME: content shouldn't control this directly
+    iframe.setAttribute('remote', 'true');
 
     var tab = {
       id: 'tab_' + this.tabCounter++,
@@ -644,6 +731,8 @@ var Browser = {
 
     if (this.currentTab.loading) {
       this.throbber.classList.add('loading');
+    } else {
+      this.throbber.classList.remove('loading');
     }
     this.updateSecurityIcon();
     this.refreshButtons();
@@ -660,12 +749,12 @@ var Browser = {
   },
 
   showAwesomeScreen: function browser_showAwesomeScreen() {
-    Places.getHistory(this.showGlobalHistory.bind(this));
     this.urlInput.focus();
     this.setUrlButtonMode(this.GO);
     this.tabsBadge.innerHTML = '';
     this.switchScreen(this.AWESOME_SCREEN);
     this.tabCover.style.display = 'none';
+    this.showHistoryTab();
   },
 
   showPageScreen: function browser_showPageScreen() {
@@ -688,7 +777,7 @@ var Browser = {
     }
     this.switchScreen(this.PAGE_SCREEN);
     this.urlInput.value = this.currentTab.title || this.currentTab.url;
-    this.tabsBadge.innerHTML = Object.keys(this.tabs).length + '&#x203A;';
+    this.updateTabsCount();
   },
 
   showTabScreen: function browser_showTabScreen() {
