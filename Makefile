@@ -412,7 +412,7 @@ lint:
 	@# cubevid
 	@# crystalskull
 	@# towerjelly
-	@gjslint --nojsdoc -r apps -e 'cubevid,crystalskull,towerjelly,email,music/js/ext,calendar/js/ext'
+	@gjslint --nojsdoc -r apps -e 'cubevid,crystalskull,towerjelly,email/js/ext,music/js/ext,calendar/js/ext'
 
 # Generate a text file containing the current changeset of Gaia
 # XXX I wonder if this should be a replace-in-file hack. This would let us
@@ -524,5 +524,6 @@ reset-gaia: purge install-settingsdb install-gaia
 purge:
 	$(ADB) shell stop b2g
 	$(ADB) shell rm -r /data/local/*
+	$(ADB) shell mkdir -p /data/local/tmp
 	$(ADB) shell rm -r /cache/*
 	$(ADB) shell rm -r /data/b2g/*
