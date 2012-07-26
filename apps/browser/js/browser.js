@@ -31,10 +31,14 @@ var Browser = {
   urlButtonMode: null,
   inTransition: false,
 
+  waitingActivities: [],
+  hasLoaded: false,
+
   init: function browser_init() {
     // Assign UI elements to variables
     this.toolbarStart = document.getElementById('toolbar-start');
     this.urlBar = document.getElementById('url-bar');
+    this.tabHeaders = document.getElementById('tab-headers');
     this.urlInput = document.getElementById('url-input');
     this.urlButton = document.getElementById('url-button');
     this.content = document.getElementById('browser-content');
@@ -114,6 +118,11 @@ var Browser = {
     // Load homepage once Places is initialised
     // (currently homepage is blank)
     Places.init((function() {
+      this.hasLoaded = true;
+      if (this.waitingActivities.length) {
+        this.waitingActivities.forEach(this.handleActivity, this);
+        return;
+      }
       this.selectTab(this.createTab(this.START_PAGE_URL));
       this.showPageScreen();
     }).bind(this));
@@ -135,12 +144,12 @@ var Browser = {
   handleWindowResize: function browser_handleWindowResize() {
     var leftPos = -(window.innerWidth - 50) + 'px';
     if (!this.gutterPosRule) {
-      var css = '.tabs-screen #main-screen { left: ' + leftPos + ' }';
+      var css = '.tabs-screen #main-screen { transform: translate(' + leftPos + '); }';
       var insertId = this.styleSheet.cssRules.length - 1;
       this.gutterPosRule = this.styleSheet.insertRule(css, insertId);
     } else {
       var rule = this.styleSheet.cssRules[this.gutterPosRule];
-      rule.style.left = leftPos;
+      rule.style.transform = 'translate(' + leftPos + ')';
     }
   },
 
@@ -313,6 +322,8 @@ var Browser = {
           evt.preventDefault();
           this.showPageScreen();
           this.urlInput.blur();
+        } else {
+          this.updateAwesomeScreen(this.urlInput.value);
         }
     }
   },
@@ -359,6 +370,23 @@ var Browser = {
     this.setUrlBar(url);
   },
 
+  getUrlFromInput: function browser_getUrlFromInput(url) {
+    url = url.trim();
+    // If the address entered starts with a quote then search, if it
+    // contains a . or : then treat as a url, else search
+    var isSearch = /^"|\'/.test(url) || !(/\.|\:/.test(url));
+    var protocolRegexp = /^([a-z]+:)(\/\/)?/i;
+    var protocol = protocolRegexp.exec(url);
+
+    if (isSearch) {
+      return 'http://www.bing.com/search?q=' + url;
+    }
+    if (!protocol) {
+      return 'http://' + url;
+    }
+    return url;
+  },
+
   handleUrlFormSubmit: function browser_handleUrlFormSubmit(e) {
     if (e) {
       e.preventDefault();
@@ -374,18 +402,7 @@ var Browser = {
       return;
     }
 
-    var url = this.urlInput.value.trim();
-    // If the address entered starts with a quote then search, if it
-    // contains a . or : then treat as a url, else search
-    var isSearch = /^"|\'/.test(url) || !(/\.|\:/.test(url));
-    var protocolRegexp = /^([a-z]+:)(\/\/)?/i;
-    var protocol = protocolRegexp.exec(url);
-
-    if (isSearch) {
-      url = 'http://www.bing.com/search?q=' + url;
-    } else if (!protocol) {
-      url = 'http://' + url;
-    }
+    var url = this.getUrlFromInput(this.urlInput.value);
 
     if (url != this.currentTab.url) {
       this.setUrlBar(url);
@@ -507,20 +524,30 @@ var Browser = {
     this.historyTab.classList.remove('selected');
   },
 
-  showTopSitesTab: function browser_showTopSitesTab() {
+  updateAwesomeScreen: function browser_updateAwesomeScreen(filter) {
+    if (!filter) {
+      this.tabHeaders.style.display = 'block';
+      filter = false;
+    } else {
+      this.tabHeaders.style.display = 'none';
+    }
+    Places.getTopSites(20, filter, this.showTopSites.bind(this));
+  },
+
+  showTopSitesTab: function browser_showTopSitesTab(filter) {
     this.deselectAwesomescreenTabs();
     this.topSitesTab.classList.add('selected');
     this.topSites.classList.add('selected');
-    Places.getTopSites(20, this.showTopSites.bind(this));
+    this.updateAwesomeScreen();
   },
 
-  showTopSites: function browser_showTopSites(topSites) {
+  showTopSites: function browser_showTopSites(topSites, filter) {
     this.topSites.innerHTML = '';
     var list = document.createElement('ul');
     list.setAttribute('role', 'listbox');
     this.topSites.appendChild(list);
     topSites.forEach(function browser_processTopSite(data) {
-      this.drawAwesomescreenListItem(list, data);
+      this.drawAwesomescreenListItem(list, data, filter);
     }, this);
   },
 
@@ -586,20 +613,22 @@ var Browser = {
   },
 
   drawAwesomescreenListItem: function browser_drawAwesomescreenListItem(list,
-    data) {
+    data, filter) {
     var entry = document.createElement('li');
     var link = document.createElement('a');
-    var title = document.createElement('span');
+    var title = document.createElement('h5');
     var url = document.createElement('small');
     entry.setAttribute('role', 'listitem');
     link.href = data.uri;
-    title.textContent = data.title ? data.title : data.uri;
+    var titleText = data.title ? data.title : data.url;
+    title.innerHTML = Utils.createHighlightHTML(titleText, filter);
+
     if (data.uri == this.START_PAGE_URL) {
       url.textContent = 'about:home';
     } else if (data.uri == this.ABOUT_PAGE_URL) {
       url.textContent = 'about:';
     } else {
-      url.textContent = data.uri;
+      url.innerHTML = Utils.createHighlightHTML(data.uri, filter);
     }
     link.appendChild(title);
     link.appendChild(url);
@@ -856,7 +885,7 @@ var Browser = {
 
     li.addEventListener('transitionend', function() {
       // Pause so the user has time to see the new tab
-      setTimeout(showTabCompleteFun, 500);
+      setTimeout(showTabCompleteFun, 100);
     });
 
     // TODO: remove setTimeout
@@ -1026,8 +1055,8 @@ var Browser = {
       if (e.detail.absolute.dx < 0) {
         return;
       }
-      this.screen.style.left = -(this.winWidth - 50) +
-        e.detail.absolute.dx + 'px';
+      var leftPos = -(this.winWidth - 50) + e.detail.absolute.dx;
+      this.screen.style.transform = 'translate(' + leftPos + 'px)';
     },
 
     tap: function screenSwipe_tap(e) {
@@ -1042,7 +1071,7 @@ var Browser = {
       var farenough = Math.abs(distance) >
         this.winWidth * this.TRANSITION_FRACTION;
       this.screen.style.MozTransition = this.DEFAULT_TRANSITION;
-      this.screen.style.left = '';
+      this.screen.style.transform = '';
       if (farenough || fastenough) {
         this.browser.showPageScreen();
         return;
@@ -1143,10 +1172,69 @@ var Browser = {
       this.tab.style.MozTransition = 'left ' + time + 'ms linear';
       this.tab.style.left = offset + 'px';
     }
+  },
+
+  handleActivity: function browser_handleActivity(activity) {
+    // Activities can send multiple names, right now we only handle
+    // one so we only filter on types
+    switch (activity.source.data.type) {
+      case 'url':
+        var url = this.getUrlFromInput(activity.source.data.url);
+        this.selectTab(this.createTab(url));
+        if (this.currentScreen !== this.PAGE_SCREEN) {
+          this.showPageScreen();
+        }
+        break;
+    }
+  }
+};
+
+// Taken (and modified) from /apps/sms/js/searchUtils.js
+// and /apps/sms/js/utils.js
+var Utils = {
+  createHighlightHTML: function ut_createHighlightHTML(text, searchRegExp) {
+    if (!searchRegExp) {
+      return text;
+    }
+    searchRegExp = new RegExp(searchRegExp, 'gi');
+    var sliceStrs = text.split(searchRegExp);
+    var patterns = text.match(searchRegExp);
+    if (!patterns) {
+      return text;
+    }
+    var str = '';
+    for (var i = 0; i < patterns.length; i++) {
+      str = str +
+        Utils.escapeHTML(sliceStrs[i]) + '<span class="highlight">' +
+        Utils.escapeHTML(patterns[i]) + '</span>';
+    }
+    str += Utils.escapeHTML(sliceStrs.pop());
+    return str;
+  },
+
+  escapeHTML: function ut_escapeHTML(str, escapeQuotes) {
+    var span = document.createElement('span');
+    span.textContent = str;
+
+    // Escape space for displaying multiple space in message.
+    span.innerHTML = span.innerHTML.replace(/\s/g, '&nbsp;');
+
+    if (escapeQuotes)
+      return span.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+    return span.innerHTML;
   }
 };
 
 window.addEventListener('load', function browserOnLoad(evt) {
   window.removeEventListener('load', browserOnLoad);
   Browser.init();
+});
+
+window.navigator.mozSetMessageHandler('activity', function actHandle(activity) {
+  if (Browser.hasLoaded) {
+    Browser.handleActivity(activity);
+  } else {
+    Browser.waitingActivities.push(activity);
+  }
+  activity.postResult({ status: 'accepted' });
 });
