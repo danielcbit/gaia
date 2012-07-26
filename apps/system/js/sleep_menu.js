@@ -10,9 +10,6 @@ var SleepMenu = {
   // Indicate setting status of volume
   isSilentModeEnabled: false,
 
-  // Origin of WindowManager.getDisplayedApp();
-  currentAppOrigin: null,
-
   // Reserve settings before turn on flight mode
   reservedSettings: {
     data: true,
@@ -76,11 +73,6 @@ var SleepMenu = {
     var settings = window.navigator.mozSettings;
     var _ = navigator.mozL10n.get;
     var options = {
-      quit: {
-        label: _('quit'),
-        value: 'quit',
-        icon: '/style/sleep_menu/images/close.png'
-      },
       airplane: {
         label: _('airplane'),
         value: 'airplane',
@@ -110,11 +102,6 @@ var SleepMenu = {
         icon: '/style/sleep_menu/images/restart.png'
       }
     };
-
-    this.currentAppOrigin = WindowManager.getDisplayedApp();
-    if(this.currentAppOrigin) {
-          items.push(options.quit);  
-    }
 
     if (this.isFlightModeEnabled) {
       items.push(options.airplaneOff);
@@ -181,10 +168,6 @@ var SleepMenu = {
 
   handler: function sm_handler(action) {
     switch (action) {
-      case 'quit':
-        WindowManager.kill(this.currentAppOrigin);
-        break;
-
       case 'airplane':
         // Airplane mode should turn off
         //
