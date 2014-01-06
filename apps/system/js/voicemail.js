@@ -7,8 +7,6 @@ var Voicemail = {
 
   icon: null,
   notification: null,
-  // A random starting point that is unlikely to be used by other notifications
-  notificationId: 3000 + Math.floor(Math.random() * 999),
 
   init: function vm_init() {
     var voicemail = window.navigator.mozVoicemail;
@@ -22,11 +20,16 @@ var Voicemail = {
   },
 
   handleEvent: function vm_handleEvent(evt) {
+    // TODO: remove this backward compatibility check
+    // after bug-814634 is landed
     var voicemail = window.navigator.mozVoicemail;
-    if (!voicemail.status)
+    var status = voicemail.status ||
+      voicemail.getStatus && voicemail.getStatus();
+
+    if (!status)
       return;
 
-    this.updateNotification(voicemail.status);
+    this.updateNotification(status);
   },
 
   updateNotification: function vm_updateNotification(status) {
@@ -40,40 +43,66 @@ var Voicemail = {
     }
 
     var text = title;
-    var voicemailNumber = navigator.mozVoicemail.number;
-    if (voicemailNumber) {
-      text = _('dialNumber', { number: voicemailNumber });
+
+    var settings = navigator.mozSettings;
+    if (!settings) {
+      return;
     }
 
-    this.hideNotification();
-    if (status.hasMessages) {
-      this.showNotification(title, text, voicemailNumber);
-    }
+    // Fetch voicemail number from 'ril.iccInfo.mbdn' settings before
+    // looking up |navigator.mozVoicemail.number|.
+    // Some SIM card may not provide MBDN info
+    // but we could still use settings to overload that.
+    var transaction = settings.createLock();
+    var request = transaction.get('ril.iccInfo.mbdn');
+    request.onsuccess = function() {
+      var number = request.result['ril.iccInfo.mbdn'];
+      var voicemail = navigator.mozVoicemail;
+      // TODO: remove this backward compatibility check
+      // after bug-814634 is landed
+      if (!number && voicemail) {
+        number = voicemail.number ||
+          voicemail.getNumber && voicemail.getNumber();
+      }
+      if (number) {
+        text = _('dialNumber', { number: number });
+      }
+
+      if (status.hasMessages) {
+        Voicemail.showNotification(title, text, number);
+      } else {
+        Voicemail.hideNotification();
+      }
+    };
+    request.onerror = function() {};
   },
 
   showNotification: function vm_showNotification(title, text, voicemailNumber) {
-    this.notificationId++;
-    this.notification = NotificationScreen.addNotification({
-      id: this.notificationId, title: title, text: text, icon: this.icon
-    });
+    if (!('Notification' in window)) {
+      return;
+    }
+
+    var notifOptions = {
+      body: text,
+      icon: this.icon,
+      tag: 'voicemailNotification'
+    };
+
+    this.notification = new Notification(title, notifOptions);
 
     if (!voicemailNumber) {
       return;
     }
 
-    var self = this;
-    function vmNotification_onTap(event) {
-      self.notification.removeEventListener('tap', vmNotification_onTap);
-
-      var telephony = window.navigator.mozTelephony;
-      if (!telephony) {
-        return;
+    this.notification.addEventListener('click',
+      function vmNotification_onClick(event) {
+        var telephony = window.navigator.mozTelephony;
+        if (!telephony) {
+          return;
+        }
+        telephony.dial(voicemailNumber);
       }
-
-      telephony.dial(voicemailNumber);
-    }
-
-    this.notification.addEventListener('tap', vmNotification_onTap);
+    );
   },
 
   hideNotification: function vm_hideNotification() {
@@ -81,12 +110,8 @@ var Voicemail = {
       return;
     }
 
-    if (this.notification.parentNode) {
-      NotificationScreen.removeNotification(this.notificationId);
-    }
-
+    this.notification.close();
     this.notification = null;
-    this.notificationId = 0;
   }
 };
 

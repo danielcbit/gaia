@@ -2,23 +2,13 @@ html {
   font-size: 10px;
 }
 
-@media screen and (min-width: 480px) {
-  html {
-    font-size: 13.3px;
-  }
-}
-
 body {
   width: 100%;
   height: 100%;
-  margin: 0px;
-  padding: 0px;
-
+  margin: 0;
+  padding: 0;
   overflow: hidden;
-
-  font-family: 'Open Sans', sans-serif;
   color: #fff;
-  font-size: 12px;
 }
 
 #screen {
@@ -26,179 +16,306 @@ body {
   overflow: hidden;
   width: 100%;
   height: 100%;
-
   background-color: #000;
-  background-size: cover;
+  background-size: cover; /* Possible memory over-consumption with huge images, it should be removed for improving stability*/
   background-repeat: no-repeat;
-  background-position: 50% 50%;
+  background-position: 50% 2rem;
 }
 
 #screen.screenoff {
   background: #000 !important;
 }
 
-#screen.screenoff > * {
-  visibility: hidden;
+#screen.screenoff * {
+  visibility: hidden !important;
 }
 
-#homescreen {
+/*
+ *  Poweroff animation
+ */
+#screen > div#poweroff-splash {
   position: absolute;
-  left: 0px;
-  top: 20px;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: -moz-calc(100% - 20px);
-  border: 0px;
-  overflow: hidden;
+  height: 100%;
+  background-color: #000;
 }
 
-#screen.active-statusbar #homescreen {
-  top: 40px;
-  height: -moz-calc(100% - 40px);
+#screen > div#poweroff-splash.step1 {
+  animation: poweroff-splash-fade-in 0.5s;
+}
+
+@keyframes poweroff-splash-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+#bottom-panel {
+  position: absolute;
+  display: none;
+  bottom: 0;
+  width: 100%;
+  height: 1rem;
+}
+
+#bottom-panel.visible{
+  display: block;
+}
+
+.poweroff-ring {
+  display: block;
+  position: absolute;
+  border-radius: 50%;
+  width: 6rem;
+  height: 6rem;
+  margin-left: -3rem;
+  margin-top: -3rem;
+  left: 50%;
+  opacity: 0;
+}
+
+#poweroff-ring-1 {
+  top: 12rem;
+  background-color: #e66600;
+}
+
+#poweroff-ring-2 {
+  top: 24rem;
+  background-color: #dc4e00;
+}
+
+#poweroff-ring-3 {
+  top: 36rem;
+  background-color: #d24500;
+}
+
+.poweroff-ring > span {
+  display: block;
+  position: absolute;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  margin: auto;
+  background-color: black;
+  width: 4rem;
+  height: 4rem;
+  margin-top: -2rem;
+  margin-left: -2rem;
+}
+
+#poweroff-ring-2 > span {
+  transform: scale(1.125);
+}
+
+#poweroff-ring-3 > span {
+  transform: scale(1.25);
+}
+
+/* Ring 1 : inner diameter scales from 40 pixel to 58 pixel */
+@keyframes ring1-scale {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.45);
+  }
+}
+
+/* Ring 2 : inner diameter scales from 45 pixel to 59.5 pixel */
+@keyframes ring2-scale {
+  0% {
+    transform: scale(1.125);
+  }
+  100% {
+    transform: scale(1.4875);
+  }
+}
+
+/* Ring 3 : inner diameter scales from 50 pixel to 59 pixel */
+@keyframes ring3-scale {
+  0% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1.475);
+  }
+}
+
+@keyframes ring-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes ring-fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+#screen > div#poweroff-splash.step2 > #poweroff-ring-1 {
+  animation: ring-fade-in  .4s ease-out  0s,
+             ring-fade-out .5s linear   .4s;
+}
+
+#screen > div#poweroff-splash.step2 > #poweroff-ring-2 {
+  animation: ring-fade-in  .4s ease-out .25s,
+             ring-fade-out .5s linear   .65s;
+}
+
+#screen > div#poweroff-splash.step2 > #poweroff-ring-3 {
+  animation: ring-fade-in  .4s ease-out .5s,
+             ring-fade-out .5s linear   .9s;
+}
+
+#screen > div#poweroff-splash.step2 > #poweroff-ring-1 > span {
+  animation: ring1-scale   .5s linear   .4s;
+}
+
+#screen > div#poweroff-splash.step2 > #poweroff-ring-2 > span {
+  animation: ring2-scale   .5s linear   .65s;
+}
+
+#screen > div#poweroff-splash.step2 > #poweroff-ring-3 > span {
+  animation: ring3-scale   .5s linear   .9s;
+}
+
+
+
+#system-overlay {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+
+  pointer-events: none;
+}
+
+#system-overlay.volume {
+  visibility: visible;
 }
 
 #windows {
   position: absolute;
-  left: 0px;
+  left: 0;
   width: 100%;
-  top: -100%;
-  height: 0;
-  max-height: 0;
-  border: 0px;
-  overflow: hidden;
-}
-
-#windows.active {
   top: 0;
   height: 100%;
   max-height: 100%;
-}
-
-#windows > iframe.appWindow {
-  position: absolute;
-  border: 0;
-  margin: 0;
-  padding: 0;
-  overflow: auto;
-  left: 0;
-  top: 20px;
-  z-index: 1;
-
-/*
- * Do not specify height/width here! They should go to
- * Window.prototype.resize() in window_manager.js
- *
- */
-
-/*
- * Disable this for now because it forces an expensive fallback path in
- * Gecko.  The performance issue should be fixed by
- * https://bugzilla.mozilla.org/show_bug.cgi?id=697645 or a related bug.
- *
-  border-radius: 8px;
- */
-}
-
-#screen.active-statusbar #windows > iframe.appWindow {
-  top: 40px;
-}
-
-#windows > iframe.appWindow.active {
-  z-index: 9995;
-  background-color: #fff;
-}
-
-#windows > iframe.appWindow:not(.active) {
-  visibility: hidden;
-}
-
-#windowSprite {
-  position: absolute;
-  top: 20px;
-  left: 0;
-  width: 100%;
-  height: -moz-calc(100% - 20px);
-  z-index: 9999;
-  opacity: 0;
-  background-color: #373a3d;
-  pointer-events: none;
-  -moz-transform: scale(0.5);
-  -moz-transition: -moz-transform 0.5s ease, opacity 0.3s ease;
-}
-
-#windowSprite.open {
-  -moz-transform: scale(1);
-  opacity: 1;
-}
-
-#windowSprite.faded {
-  opacity: 0;
-}
-
-#windowSprite.close {
-  /* The transition on color is not really useful but it is used to fire
-     a transitionend event on the sprite after a certain amount of time.
-     This amount of time is when the 'transform' animation should start.
-  */
-  -moz-transition: color 0.1s ease, opacity 0.3s ease, -moz-transform 0.3s 0.1s ease;
-  -moz-transform: scale(0.5);
-  opacity: 0.3;
-  color: black;
+  border: 0rem;
+  overflow: hidden;
 }
 
 .accessibility-invert {
   filter: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxmaWx0ZXIKICAgICAgaWQ9ImludmVydEZpbHRlciIKICAgICAgY29sb3ItaW50ZXJwb2xhdGlvbi1maWx0ZXJzPSJzUkdCIj4KICAgIDxmZUNvbG9yTWF0cml4CiAgICAgICAgdmFsdWVzPSItMSAwIDAgMCAxIDAgLTEgMCAwIDEgMCAwIC0xIDAgMSAwIDAgMCAxIDAgIiAvPgogIDwvZmlsdGVyPgo8L3N2Zz4K#invertFilter);
 }
 
-iframe.backgroundWindow {
+#dialog-overlay {
   position: absolute;
-  top: -1px;
-  left: -1px;
-  width: 1px;
-  height: 1px;
+  top: 2rem;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 2rem);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media not all and (-moz-physical-home-button) {
+  #dialog-overlay {
+    bottom: 5rem;
+    height: calc(100% - 2rem - 5rem);
+  }
+}
+
+#screen.software-button-enabled #windows > #dialog-overlay {
+  bottom: 5rem;
+  height: calc(100% - 2rem - 5rem);
+}
+
+#screen.active-statusbar #dialog-overlay,
+#screen.active-statusbar.fullscreen-app #dialog-overlay {
+  top: 4rem;
+  height: calc(100% - 4rem);
+}
+
+#screen:-moz-full-screen-ancestor #dialog-overlay,
+#screen.fullscreen-app #dialog-overlay {
+  top: 0;
+  height: 100%;
+}
+
+#screen:not(.crash-dialog) #crash-dialog {
   visibility: hidden;
 }
 
-#keyboard-frame {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 10001;
-  border: 0;
-  transform: translateY(0);
-  -moz-transition: -moz-transform 0.3s ease-in;
-  pointer-events: none;
-}
-
-#keyboard-frame.visible {
-  z-index: 9000;
+/* `.dialog` is set by system_dialog.js when a dialog is shown */
+#screen.dialog #dialog-overlay {
+  visibility: visible;
   pointer-events: auto;
 }
 
-#keyboard-frame.hide {
+#screen.crash-dialog #dialog-overlay,
+#screen.crash-dialog #crash-dialog,
+#screen.modal-dialog #dialog-overlay,
+#screen.modal-dialog #modal-dialog,
+#screen.popup #popup-container,
+#screen.trustedui #trustedui-container,
+#screen.trustedui #dialog-overlay {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+@keyframes banner-bounce {
+  from, to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  12.5%, 87.5% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+#system-banner {
+  z-index: 0;
+  visibility: hidden;
+  opacity: 0;
   transform: translateY(100%);
 }
 
-#keyboard-overlay {
-  position: absolute;
-  top: 0px;
-  width: 100%;
-  border: 0;
-  z-index: 10002;
-  background: -moz-element(#keyboard-frame);
-  background-position: top center;
-  pointer-events: none;
+#system-banner.visible {
+  animation: banner-bounce 4s;
+  visibility: visible;
 }
 
-/*
- * Keyboard is on top of these overlays, hiding the overlay
- */
-#screen.popup #keyboard-overlay,
-#screen.modal-dialog #keyboard-overlay {
-  display: none;
+#system-banner button {
+  width: auto;
 }
 
-#screen.fullscreen #keyboard-overlay {
-  /* Show it above fullscreen - see https://mxr.mozilla.org/mozilla-central/source/layout/style/ua.css#218 */
-  z-index: 2147483647;
+#system-banner[data-button="false"] button {
+  visibility: hidden;
+}
+
+#screen iframe.communication-frame {
+  visibility: hidden;
+}
+
+@media (min-width: 768px) {
+  #dialog-overlay {
+    background-color: rgba(0,0,0,0.6);
+    background: url(../themes/default/images/ui/menu_bg.png) no-repeat;
+  }
 }

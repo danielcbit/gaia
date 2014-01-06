@@ -1,19 +1,27 @@
 (function(window) {
 
   var Cal = Calendar.Template.create({
-    item: [
-      '<li id="calendar-{_id}" data-id="{_id}">',
-        '<label>',
-          '<span class="name">{name}</span>',
-          '<input ',
-            'type="checkbox" ',
-            // this is temp until toggle actually works
-            'disabled="disabled" ',
-            '{localDisplayed|bool=checked} />',
-          '<span></span>',
-        '</label>',
-      '</li>'
-    ].join('')
+    item: function() {
+      var id = this.h('_id');
+      var l10n = '';
+
+      // hack localize the only default calendar
+      if (id && Calendar.Provider.Local.calendarId === id) {
+        // localize the default calendar name
+        l10n = 'data-l10n-id="calendar-local"';
+      }
+
+      return '<li id="calendar-' + id + '">' +
+          '<div class="calendar-id-' + id + ' calendar-color"></div>' +
+          '<label class="pack-checkbox">' +
+            '<input ' +
+              'value="' + id + '" ' +
+              'type="checkbox" ' +
+              this.bool('localDisplayed', 'checked') + ' />' +
+            '<span ' + l10n + ' class="name">' + this.h('name') + '</span>' +
+          '</label>' +
+        '</li>';
+    }
   });
 
   Calendar.ns('Templates').Calendar = Cal;

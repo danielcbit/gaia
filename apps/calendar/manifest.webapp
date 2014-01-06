@@ -1,28 +1,26 @@
 {
   "name": "Calendar",
   "description": "Gaia Calendar",
+  "type": "certified",
   "launch_path": "/index.html",
   "developer": {
     "name": "The Gaia Team",
     "url": "https://github.com/mozilla-b2g/gaia"
   },
-  "permissions": [
-    "systemXHR"
+  "messages": [
+     { "alarm": "/index.html" },
+     { "notification": "/index.html" }
   ],
+  "permissions": {
+    "systemXHR":{},
+    "settings":{ "access": "readonly" },
+    "alarms":{},
+    "browser": {},
+    "storage":{},
+    "desktop-notification":{}
+  },
   "locales": {
     "ar": {
-      "name": "Calendar",
-      "description": "Gaia Calendar"
-    },
-    "ca": {
-      "name": "Calendar",
-      "description": "Gaia Calendar"
-    },
-    "de": {
-      "name": "Kalender",
-      "description": "Gaia Kalender"
-    },
-    "el": {
       "name": "Calendar",
       "description": "Gaia Calendar"
     },
@@ -30,29 +28,9 @@
       "name": "Calendar",
       "description": "Gaia Calendar"
     },
-    "es": {
-      "name": "Calendar",
-      "description": "Gaia Calendar"
-    },
     "fr": {
       "name": "Agenda",
       "description": "Agenda Gaia"
-    },
-    "it": {
-      "name": "Calendar",
-      "description": "Gaia Calendar"
-    },
-    "pt-BR": {
-      "name": "Calendar",
-      "description": "Gaia Calendar"
-    },
-    "ru": {
-      "name": "Calendar",
-      "description": "Gaia Calendar"
-    },
-    "tr": {
-      "name": "Calendar",
-      "description": "Gaia Calendar"
     },
     "zh-TW": {
       "name": "Calendar",
@@ -61,8 +39,9 @@
   },
   "default_locale": "en-US",
   "icons": {
-    "120": "/style/icons/Calendar.png",
-    "60": "/style/icons/60/Calendar.png"
+    "60": "/style/icons/Calendar_60.png",
+    "90": "/style/icons/Calendar_90.png",
+    "120": "/style/icons/Calendar_120.png"
   },
-  "orientation": "portrait-primary"
+  "orientation": "default"
 }

@@ -37,7 +37,6 @@
 //   volumeup    volume up pressed and released or autorepeated
 //   volumedown  volume down pressed and released or autorepeated
 //   home+sleep  home and sleep pressed at same time (used for screenshots)
-//   home+volume home and either volume key at the same time (view source)
 //
 // Because these events are fired at the window object, they cannot be
 // captured.  Many modules listen for the home event. Those that want
@@ -50,7 +49,7 @@
 'use strict';
 
 (function() {
-  var HOLD_INTERVAL = 1500;   // How long for press and hold Home or Sleep
+  var HOLD_INTERVAL = 750;   // How long for press and hold Home or Sleep
   var REPEAT_DELAY = 700;     // How long before volume autorepeat begins
   var REPEAT_INTERVAL = 100;  // How fast the autorepeat is.
 
@@ -76,9 +75,7 @@
       state.enter(type);
   }
 
-  // This event handler listens for hardware button events and passes the
-  // event type to the process() method of the current state for processing
-  window.addEventListener('mozChromeEvent', function(e) {
+  function buttonEventHandler(e) {
     var type = e.detail.type;
     switch (type) {
       case 'home-button-press':
@@ -92,7 +89,13 @@
         state.process(type);
         break;
     }
-  });
+  }
+
+  // This event handler listens for hardware button events and passes the
+  // event type to the process() method of the current state for processing
+  window.addEventListener('mozChromeEvent', buttonEventHandler);
+
+  window.addEventListener('softwareButtonEvent', buttonEventHandler);
 
   // The base state is the default, when no hardware buttons are pressed
   var baseState = {
@@ -141,6 +144,7 @@
     enter: function() {
       this.timer = setTimeout(function() {
         fire('holdhome');
+        navigator.vibrate(50);
         setState(baseState);
       }, HOLD_INTERVAL);
     },
@@ -154,6 +158,7 @@
       switch (type) {
       case 'home-button-release':
         fire('home');
+        navigator.vibrate(50);
         setState(baseState, type);
         return;
       case 'sleep-button-press':
@@ -162,7 +167,6 @@
         return;
       case 'volume-up-button-press':
       case 'volume-down-button-press':
-        fire('home+volume');
         setState(baseState, type);
         return;
       }
@@ -237,7 +241,6 @@
     process: function(type) {
       switch (type) {
       case 'home-button-press':
-        fire('home+volume');
         setState(baseState, type);
         return;
       case 'sleep-button-press':
@@ -284,9 +287,9 @@
       else
         this.delegateState = sleepState;
       this.timer = setTimeout(function() {
-        if (t === 'home-button-press') {
+        if (type === 'home-button-press') {
           fire('holdhome');
-        } else if (t === 'sleep-button-press') {
+        } else if (type === 'sleep-button-press') {
           fire('holdsleep');
         }
         setState(baseState, type);

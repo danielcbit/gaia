@@ -1,4 +1,5 @@
-(function(window) {
+Calendar.ns('Models').Account = (function() {
+
   function Account(options) {
     var key;
 
@@ -11,16 +12,15 @@
         this[key] = options[key];
       }
     }
-
-    if (this.providerType) {
-      this._setupProvider();
-    }
   }
 
   Account.prototype = {
 
+    /**
+     * Type of provider this
+     * account requires.
+     */
     providerType: null,
-    provider: null,
 
     /**
      * ID for this model always set
@@ -41,7 +41,13 @@
     /**
      * url/path for account
      */
-    url: '',
+    entrypoint: '',
+
+    /**
+     * Location where calendars can be found.
+     * May be the same as entrypoint.
+     */
+    calendarHome: '',
 
     /**
      * username for authentication
@@ -54,14 +60,14 @@
     password: '',
 
     get fullUrl() {
-      return this.domain + this.url;
+      return this.domain + this.entrypoint;
     },
 
     set fullUrl(value) {
       var protocolIdx = value.indexOf('://');
 
       this.domain = value;
-      this.url = '/';
+      this.entrypoint = '/';
 
       if (protocolIdx !== -1) {
         protocolIdx += 3;
@@ -73,66 +79,11 @@
         if (pathIdx !== -1) {
           pathIdx = pathIdx + protocolIdx;
 
-          this.url = value.substr(pathIdx);
+          this.entrypoint = value.substr(pathIdx);
           this.domain = value.substr(0, pathIdx);
         }
 
       }
-    },
-
-    _setupProvider: function() {
-      var provider = this.provider;
-      var type = this.providerType;
-
-      if (!provider) {
-        this.provider = provider = new Calendar.Provider[type]();
-      }
-
-      if (provider.useUrl) {
-        provider.url = this.url;
-        provider.domain = this.domain;
-      }
-
-      if (provider.useCredentials) {
-        provider.user = this.user;
-        provider.password = this.password;
-      }
-    },
-
-    /**
-     * Connects to server with new credentials
-     * this operation will possibly update
-     *
-     * @param {Function} callback node style callback.
-     */
-    setup: function(callback) {
-      var self = this;
-
-      self._setupProvider();
-
-      this.provider.setupConnection(function(err, data) {
-        if (err) {
-          callback(err);
-          return;
-        }
-
-        if ('url' in data) {
-          self.url = data.url;
-        }
-
-        if ('domain' in data) {
-          self.domain = data.domain;
-        }
-
-        // update provider
-        self._setupProvider();
-
-        callback(null, self);
-      });
-    },
-
-    connect: function() {
-      this._setupProvider();
     },
 
     /**
@@ -142,25 +93,33 @@
      * in indexeddb.
      */
     toJSON: function() {
-      var output = Object.create(null);
+      var output = {};
       var fields = [
-        'url',
+        'entrypoint',
+        'calendarHome',
         'domain',
         'password',
         'user',
         'providerType',
-        'preset'
+        'preset',
+        'oauth',
+        'error'
       ];
 
       fields.forEach(function(key) {
         output[key] = this[key];
       }, this);
 
+      if (this._id || this._id === 0) {
+        output._id = this._id;
+      }
+
       return output;
     }
 
   };
 
-  Calendar.ns('Models').Account = Account;
+
+  return Account;
 
 }(this));

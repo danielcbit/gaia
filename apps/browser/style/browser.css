@@ -2,12 +2,11 @@ html, body {
   height: 100%;
   padding: 0;
   margin: 0;
-  background-color: #575E66;
-  font-family: 'Open Sans', sans-serif;
+  font-size: 10px;
+  overflow: hidden;
 }
 
 body {
-  overflow: hidden;
   position: relative;
 }
 
@@ -24,11 +23,12 @@ input[type="image"] {
   pointer-events: none;
 }
 
+.tabs-screen #main-screen {
+  transform: translateX(calc(-100% + 5rem));
+}
+
 .tabs-screen #tabs-badge {
-  background-image: url('./images/add.png');
-  background-repeat: no-repeat;
-  background-position: center;
-  background-color: transparent;
+  display: none;
 }
 
 .awesome-screen #awesomescreen {
@@ -40,14 +40,25 @@ input[type="image"] {
 }
 
 .awesome-screen #tabs-badge {
-  background-image: url('./images/close.png');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-color: transparent;
+  display: none;
+}
+
+#settings {
+  font-size: 1.6rem;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: #f4f4f4;
+  width: 100%;
+  height: 100%;
+  z-index: 150;
+  transition: 0.5s ease-in-out;
+  transform: translateY(100%);
 }
 
 .settings-screen #settings {
   display: block;
+  transform: translateY(0%);
 }
 
 .current {
@@ -55,10 +66,11 @@ input[type="image"] {
 }
 
 #tray {
+  font-size: 1.7rem;
   -moz-transition: 0.2s ease-in-out;
   position: absolute;
-  left: 50px;
-  right: 0px;
+  left: 5rem;
+  right: 0;
   top: 0;
   bottom: 0;
   color: white;
@@ -66,28 +78,30 @@ input[type="image"] {
   background-image: url('./images/drawer-header-background.png');
   background-repeat: repeat-x;
   background-position: top;
+  background-size: auto 5rem;
 }
 
 #new-tab {
-  height: 30px;
-  margin: 18px;
+  height: 3rem;
+  margin: 1.8rem;
   border: 0;
   color: white;
   background: black;
-  font-size: 16px;
-  padding: 5px;
+  font-size: 1.7rem;
+  padding: 0.5rem;
   cursor: pointer;
 }
 
 #tabs-list {
-  border-top: 1px solid #333;
+  border-top: 0.1rem solid #333;
   overflow-y: auto;
   position:absolute;
-  top: 50px;
-  bottom: 0px;
+  top: 5rem;
+  bottom: 0;
   left: 0;
   right: 0;
   background-image: url('./images/tabs-list-background.png');
+  background-size: auto 100%;
 }
 
 #tabs-list ul {
@@ -98,164 +112,201 @@ input[type="image"] {
 
 #tabs-list li a {
   display: block;
-  height: 100%;
+  height: 6.5rem;
   -moz-user-select: none;
+  padding: 1rem;
+  width: calc(100% - 2rem);
+  position: absolute;
 }
 
 #tabs-list li {
   margin: 0;
-  height: 70px;
-  border-bottom: 1px solid #54575c;
-  font-family: 'Open Sans', sans-serif;
+  height: 8.5rem;
+  border-bottom: 0.1rem solid #54575c;
   overflow: hidden;
   position: relative;
-  padding-left: 5px;
+  width: 100%;
 }
 
 #tabs-list li a.active {
   background-image: -moz-linear-gradient(#ff9400, #e66100);
 }
 
-#tabs-list img {
+#tabs-list .preview {
   display: block;
-  width: 90px;
-  height: 60px;
-  background: grey;
+  width: 9rem;
+  height: 6.5rem;
+  background-color: rgba(255, 255, 255, 0.3);
+  background-size: cover;
   float:left;
-  border-radius: 5px;
-  margin: 5px 10px 5px 5px;
+  border-radius: 0.5rem;
   pointer-events: none;
+  margin-right: 1rem;
+}
+
+.preview.crashed {
+  background-image: url(images/tab-icon-crashedtab.png);
 }
 
 #tabs-list span {
   pointer-events: none;
+  display: block;
+  height: 6.5rem;
+  top: 0;
+  margin: 0 5rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-#tabs-list .close:hover, #tabs-list .close:active {
-  color: #666;
+#tabs-list .close:active {
+  background-image: url(images/tab-icon-pressed-closetab.png);
 }
 
 #tabs-list .close {
-  font-family: 'Open Sans', sans-serif;
-  border: 0px;
   position: absolute;
-  right: 0px;
-  height: 100%;
-  width: 50px;
+  right: 0;
   top: 0;
-  background: transparent;
-  font-size: 28px;
-  color: white;
-  padding-bottom: 7px;
+  width: 5rem;
+  height: 100%;
+  border: 0;
+  background: url(images/tab-icon-pressed-closetab.png) no-repeat 50% 50% / 3rem;
 }
 
 #main-screen {
-  -moz-transition: 0.2s ease-in-out;
   margin: 0;
-  display: -moz-box;
-  -moz-box-orient: vertical;
   width: 100%;
   height: 100%;
-  font-family: 'Open Sans', sans-serif;
   z-index: 50;
   position: relative;
-  left: 0px;
+  left: 0;
+  overflow: hidden;
+  /*
+   * Make sure this frame starts out with an identity transform so that
+   * when we apply the .address-hidden style, we aren't reframed.
+   *
+   * https://bugzilla.mozilla.org/show_bug.cgi?id=795657 will fix the
+   * underlying problem.
+   */
+  transform: translateY(0);
+  transition: transform 0.2s ease-in-out;
+}
+
+#main-screen.address-hidden {
+  transform: translateY(-5rem);
+}
+
+#main-screen.expanded {
+  height: calc(100% + 5rem);
 }
 
 #tabs-badge {
-  font-family: 'Open Sans', sans-serif;
   position: absolute;
-  right: 0px;
+  right: 0;
   top: 0;
-  font-size: 22px;
+  font-size: 2.3rem;
   color: white;
-  z-index: 100;
   display: block;
-  width: 44px;
-  height: 50px;
-  line-height: 50px;
+  width: 4.4rem;
+  height: 5rem;
+  line-height: 5rem;
   text-align: center;
   cursor: pointer;
   -moz-user-select: none;
 }
-#tabs-badge:active, #tabs-badge:hover {
-  color: #AAA;
+
+#more-tabs {
+  font-size: 2.8rem;
 }
 
 #toolbar-start {
-  display: -moz-box;
-  -moz-box-orient: horizontal;
-  height: 50px;
+  height: 5rem;
   background-color: #f9f9fb;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 #throbber {
   position: absolute;
-  top: 50px;
+  bottom: 0;
   width: 100%;
-  height: 3px;
-  z-index: 200;
+  height: 0.3rem;
+  z-index: 99;
 }
 
 #throbber.loading {
-  height: 4px;
-  background-image: url('images/progress.gif');
-}
-
-#toolbar-end {
-  border-top: solid 2px #a6b3bb;
-  display: none;
+  background: url('images/progress.gif') repeat-x left bottom / 100%;
 }
 
 .page-screen #toolbar-start {
   background-image: url('./images/tabs-badge-background.png');
   background-repeat: no-repeat;
   background-position: right;
-  padding-right: 74px;
+  background-size: auto 5rem;
+  padding-right: 6.5rem;
+}
+
+.page-screen #toolbar-start:active {
+  background-image: url('./images/tab-pressed-bg.png');
 }
 
 .tabs-screen #toolbar-start {
-  background-image: url('./images/drawer-collapse.png'), url('./images/tabs-badge-background.png');
+  background-image: url('./images/iconaction_back_50x50.png'),
+                    url('./images/tabs-badge-background.png');
   background-repeat: no-repeat, no-repeat;
   background-position: top right, right;
-  padding-right: 74px;
+  background-size: 5rem, auto 5rem;
+  padding-right: 6.5rem;
 }
 
-.page-screen #toolbar-end {
-  display: block;
+.tabs-screen #toolbar-start:active {
+  background-image: url('./images/iconaction_back_50x50.png'),
+                    url('./images/tab-pressed-bg.png');
+  background-size: 5rem, auto 5rem;
+}
+
+.tabs-screen #frames {
+  bottom: 0;
 }
 
 #url-bar {
-  -moz-box-flex: 1;
   display: -moz-box;
   -moz-box-orient: horizontal;
-  padding: 0;
-  margin: 10px;
-  border: solid 1px;
-  border-color: #c1c5ce;
-  border-radius: 5px;
-  height: 34px;
-  margin: 8px 0px 8px 5px;
-  padding: 0 0 0 10px;
+  margin: 1rem;
+  border: 0.1rem solid #c1c5ce;
+  border-radius: 0.5rem;
+  height: 3.4rem;
+  margin: 0.8rem 0 0.8rem 0.5rem;
+  padding: 0 0 0 0.5rem;
   background-color: #fff;
   font-weight: 600;
+  width: calc(100% - 1.5rem);
+}
+
+#url-bar.focus {
+  border: 0.1rem solid #00c7ef;
 }
 
 #url-button {
   background-position: center;
-  display: block;
-  height: 32px;
-  width: 32px;
+  display: none;
+  height: 3.2rem;
+  width: 3.2rem;
+  background-size: 3rem;
+  float: right;
+  background-repeat: no-repeat;
 }
 
 #ssl-indicator {
   display: block;
-  width: 24px;
-  height: 24px;
-  margin-right: 5px;
+  width: 2.4rem;
+  height: 3.4rem;
+  margin-right: 0.2rem;
   text-indent: -1000em;
   background-repeat: no-repeat;
   background-position: center center;
+  background-size: 3.2rem;
 }
 
 #ssl-indicator[value=secure] {
@@ -271,80 +322,58 @@ input[type="image"] {
 }
 
 #url-input {
-  font-family: 'Open Sans';
-  font-size: 18px;
-  height: 34px;
-  margin: 0;
+  font-size: 1.7rem;
+  height: 3.4rem;
   -moz-box-flex: 1;
+  margin: 0;
+  padding: 0;
   border: none;
   background-color: transparent;
+  background: none;
   text-overflow: ellipsis;
+  padding: 0 0;
+  width: calc(100% - 3.2rem);
 }
 
 #url-input:invalid {
   box-shadow: none;
 }
 
+#url-input:disabled {
+  color: #000;
+}
+
 menu[type="toolbar"] {
-  height: 45px;
-  background-color: #fff;
-  background-image: -moz-linear-gradient(#323639, #272b2e);
+  height: 4.5rem;
   margin: 0;
   padding: 0;
 }
 
-menu button {
+menu[type="toolbar"] button {
   background-color: transparent;
   -moz-appearance: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 3rem auto;
   border: none;
+  border-radius: 0;
   display: block;
   margin: 0;
   padding: 0;
-  width: 80px;
-  height: 45px;
+  width: 8rem;
+  height: 4.5rem;
   float: left;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#back-button {
-  background-image: url("images/back.png");
-}
-
-#forward-button {
-  background-image: url("images/forward.png");
-}
-
-
-#back-button:active {
-  background-image: url("images/back-pressed.png");
 }
 
 input::-moz-focus-inner {
   border: 0;
 }
 
-#back-button[disabled] {
-  background-image: url("images/back-disabled.png");
-}
-
-#forward-button[disabled] {
-  display: none;
-}
-
-#bookmark-button {
-  float: right;
-  background-image: url("images/bookmark.png");
-}
-
-#bookmark-button.bookmarked {
- background-image: url("images/bookmarked.png");
-}
-
 #frames {
-  -moz-box-flex: 1;
   width: 100%;
-  position: relative;
+  position: absolute;
+  top: 5rem;
+  bottom: 4.5rem;
   background: white;
 }
 
@@ -360,194 +389,239 @@ input::-moz-focus-inner {
   z-index: 100;
 }
 
-#awesomescreen {
+#awesomescreen, #crashscreen, #startscreen {
+  font-size: 1.7rem;
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 60;
   background-color: #fff;
   display: none;
 }
 
-nav[data-role="tabs"] {
+#startscreen {
   display: block;
-  background-color: #CCD6DF;
-  width: 100%;
-  height: 36px;
-}
-
-ul[role="tablist"] {
+  z-index: 58;
   margin: 0;
   padding: 0;
-  list-style-type: none;
+  height: 100%;
+  width: 100%;
+  background: url('/shared/resources/branding/about_logo.png') no-repeat 16.5rem top, -moz-linear-gradient(#f8f8fa, #cadce6);
+  background-position: top right;
+  background-size: 16.5rem;
+  overflow: hidden;
+  color: #3e4041;
 }
 
-li[role="tab"] {
-  display: inline;
-
+#startscreen h1 {
+  font-size: 2.5rem;
+  margin: 1rem 1.5rem;
 }
 
-li[role="tab"] a {
-  display: block;
-  float: left;
-  height: 36px;
-  text-decoration: none;
-  color: #000;
-  line-height: 36px;
-  text-align: center;
-  padding: 0 30px;
-  font-size: 14px;
-  outline: none;
-  margin-left: -30px;
+#startscreen h2 {
+  font-size: 1.4rem;
+  margin: 0 0 1.5rem 1.5rem;
 }
 
-li[role="tab"]:first-child a {
-  margin-left: 0;
-}
-
-li[role="tab"] a.selected {
-  background-image: url('images/tab-background.png');
-  background-image: url('images/tab-left.png'), url('images/tab-right.png'), url('images/tab-background.png');
-  background-position: left, right, center;
-  background-repeat: no-repeat, no-repeat, repeat-x;
-  background-origin: padding-box;
-}
-
-section[role="tabpanel"] {
-  padding-top: 5px;
-  clear: both;
-  background-color: #f3f4f8;
+#startscreen.hidden {
   display: none;
 }
 
-section[role="tabpanel"].selected {
-  display: block;
+#start-screen-top-sites {
+  width: 29rem;
+  margin: 0 auto;
+  overflow: hidden;
 }
 
-#awesomescreen h3 {
-  font-size: 0.9em;
-  margin: 0 10px;
-  color: #FF5F19;
-  border-bottom: solid 1px #FF5F19;
-  padding: 0;
-}
-
-ul[role="listbox"] {
+#top-site-thumbnails {
   margin: 0;
   padding: 0;
 }
 
-li[role="listitem"] {
+#top-site-thumbnails li {
   list-style-type: none;
-  margin: 0 10px;
+  text-align: center;
+  float: left;
+  position: relative;
+  border-bottom: 0.2rem solid #CCC;
+  margin-bottom: 2rem;
 }
 
-li[role="listitem"]:last-child a {
-  border-bottom: none;
+#top-site-thumbnails li:nth-child(2n) {
+  margin-left: 1rem;
 }
 
-li[role="listitem"] a {
+#top-site-thumbnails li a {
   display: block;
-  padding: 8px;
-  text-decoration: none;
-  color: #000;
-  border-bottom: solid 1px #ccc;
-  padding-left: 32px;
-  background-repeat: no-repeat;
-  background-position: 8px 20px;
-  background-size: 16px;
-  outline: none;
-}
-li[role="listitem"] a:hover, li[role="listitem"] a:active {
-  background-color: #EEE;
+  width: 14rem;
+  height: 10rem;
+  background-color: rgba(255, 255, 255, 0.3);
+  background-size: cover;
 }
 
-li[role="listitem"] h5 {
+#top-site-thumbnails li span {
+  font-size: 1.4rem;
   display: block;
+  width: 13.4rem;
+  height: 1.5rem;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background-color: rgba(255, 255, 255, 0.8);
+  position: absolute;
+  bottom: 0;
+  padding: 0.3rem;
+  pointer-events: none;
+}
+
+#awesomescreen {
+  z-index: 60;
+}
+
+#crashscreen {
+  background-color: #4f4f4f;
+  background-image: url('images/crashed-tab-background.png');
+  background-size: 100% auto;
+  color: #fff;
+  z-index: 59;
+  text-align: center;
+}
+
+#crashscreen h3, #crashscreen p {
+  padding: 0 1.5rem;
+}
+
+#crashscreen h3 {
+  font-size: 2.1rem;
   font-weight: normal;
-  margin: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  pointer-events: none;
-  font-size: 14px;
 }
 
-li[role="listitem"] small {
+#crashscreen img {
   display: block;
-  color: #666;
-  overflow: hidden;
-  white-space: nowrap;
-  pointer-events: none;
+  margin: 0 auto;
+  width: 5rem;
 }
 
-.highlight {
-  font-weight: bold;
-  text-decoration: underline;
+#crashscreen p {
+  font-size: 1.7rem;
+}
+
+#crashscreen menu[type="toolbar"] {
+  background-color: #3e3e3e;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 7rem;
+}
+
+#crashscreen button {
+  height: 3.8rem;
+  margin: 1.7rem 1rem;
+  padding: 0 1.5rem;
+  -moz-box-sizing: border-box;
+  display: inline-block;
+  vertical-align: middle;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  background: #fafafa url('images/button-background.png') repeat-x left bottom;
+  border: 0.1rem solid #9f9f9f;
+  border-radius: 0.3rem;
+  font-size: 1.7rem;
+  line-height: 3.8rem;
+  color: #333;
+  text-align: center;
+  text-shadow: 0.1rem 0.1rem 0 rgba(255,255,255,0.3);
+  text-decoration: none;
+  outline: none;
+  width: 14rem;
+}
+
+#crashscreen button:active,
+a[role="button"]:active,
+button.recommend:active,
+a.recommend[role="button"]:active  {
+  border-color: #008aaa;
+  background: #008aaa;
+  color: #333;
+}
+
+#close-tab {
+  float: left;
+}
+
+#try-reloading {
+  float: right;
+}
+
+#awesomescreen {
+  z-index: 60;
+}
+
+#screen {
+  z-index: 61;
 }
 
 .awesome-screen #toolbar-start {
   background-color: #ccd6df;
-  margin-right: 50px;
+  padding-right: 5rem;
   background-image: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.awesome-screen #frames {
+  bottom: 0;
 }
 
 .awesome-screen #tabs-badge {
-  width: 50px;
+  width: 5rem;
   background-color: #ccd6df;
-}
-
-#history, #bookmarks, #top-sites {
-  height: -moz-calc(100% - 36px);
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-#history-list {
-  -moz-box-flex: 1;
 }
 
 #browser-menu {
   position: absolute;
-  right: 8px;
-  bottom: 72px;
+  right: 0.8rem;
+  bottom: 7.2rem;
   width: 50%;
   background-color: #f5f2f3;
-  border-radius: 8px;
+  border-radius: 0.8rem;
   z-index: 999;
   margin: 0;
   padding: 0;
-  box-shadow: 0 0 5px #333;
+  box-shadow: 0 0 0.5rem #333;
 }
 
 #browser-menu::before {
   content: '';
   display: block;
-  width: 16px;
-  height: 16px;
+  width: 1.6rem;
+  height: 1.6rem;
   position: absolute;
-  bottom: -8px;
-  right: 12px;
+  bottom: -0.8rem;
+  right: 1.2rem;
   -moz-transform: rotate(-45deg);
   background-color: #f5f2f3;
-  box-shadow: 0 0 4px #333;
+  box-shadow: 0 0 0.4rem #333;
 }
 
 #browser-menu::after {
   content: '';
   display: block;
-  width: 30px;
-  height: 16px;
+  width: 3rem;
+  height: 1.6rem;
   position: absolute;
   bottom: 0;
-  right: 7px;
+  right: 0.7rem;
   background-color: #f5f2f3;
 }
 
 #browser-menu li {
   padding: 0;
-  margin: 0 16px;
+  margin: 0 1.6rem;
   list-style-type: none;
 }
 
@@ -558,156 +632,152 @@ li[role="listitem"] small {
 
 #browser-menu li a {
   display: block;
-  font-size: 22px;
-  padding: 19px 19px 19px 44px;
-  border-bottom: solid 1px #d0cecf;
+  font-size: 2.2rem;
+  padding: 1.9rem 1.9rem 1.9rem 4.4rem;
+  border-bottom: solid 0.1rem #d0cecf;
   text-decoration: none;
   color: #4f5357;
   background-repeat: no-repeat;
-  background-position: 5px 20px;
+  background-position: 0.5rem 2rem;
   font-weight: 600;
 }
 
 #refresh a {
   background-image: url('images/refresh.png');
+  background-size: auto;
 }
 
 .hidden {
   display: none;
 }
 
-#cover {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 500;
-}
-
-#cover ul {
-  background: white;
-  width: 80%;
-  margin: 20px auto;
-  padding: 0;
-  list-style-type: none;
-}
-
-#cover ul li {
-  font-family: 'Open Sans', sans-serif;
-  padding: 15px;
-  border-bottom: 1px solid #CCC;
-  cursor: pointer;
-}
-
-#cover ul li:hover, #cover ul li:active {
-  background: #EEE;
-}
-
-#cover ul li img {
-  margin-right: 10px;
-}
-
-#modal-dialog-alert,
-#modal-dialog-confirm,
-#modal-dialog-prompt {
-  width: 90% !important;
-  margin: 0 auto !important;
-}
-
-#modal-dialog-tablecell {
-  background: rgba(0, 0, 0, 0.5);
-}
-
 #tray-toolbar {
   background: none;
-  height: 50px;
-  padding-right: 44px;
+  height: 5rem;
+}
+
+#tray-toolbar button {
+  width: 6rem;
+  border-radius: 0;
 }
 
 #settings-button {
-  background-image: url('images/settings.png');
+  background: url('images/iconaction_settings_30x30.png') center center no-repeat;
+  background-size: 3rem;
   float: right;
-  height: 50px;
+  height: 5rem;
 }
 
-#settings {
+#settings-button:active {
+  background: url('images/iconaction_settings_30x30.png') center center no-repeat,
+              url('images/icon-pressed-bg.png') 100% no-repeat;
+}
+
+#new-tab-button {
+  background: url('images/iconaction_new_30x30.png') center center no-repeat,
+              url('images/header-divider.png') left center no-repeat;
+  background-size: 3rem, auto;
+  float: right;
+  height: 5rem;
+}
+
+#new-tab-button:active {
+  background: url('images/iconaction_new_30x30.png') center center no-repeat,
+              url('images/header-divider.png') left center no-repeat,
+              url('images/icon-pressed-bg.png') 100% no-repeat;
+}
+
+#danger-dialog {
+  z-index: 200;
+}
+
+/** Bookmark Menu **/
+#bookmark-menu {
   position: absolute;
-  left: 0px;
-  top: 0;
-  background-color: #F3F4F8;
-  width: 100%;
-  height: 100%;
-  z-index: 150;
+  z-index: 61;
+}
+
+#bookmark-menu li.hidden {
   display: none;
 }
 
-#settings header {
-  background-color: black;
-  height: 50px;
-  background-image: linear-gradient(#323639, #272B2E);
+#bookmark-menu.hidden {
+  display: none;
 }
 
-#settings header h1 {
-  font-size: 20px;
-  color: white;
-  margin: 0;
-  line-height: 50px;
-  padding-left: 10px;
+/* Edit bookmark entry sheet */
+
+#bookmark-entry-sheet {
+  z-index: 101;
+  display: block;
+  position: absolute;
+  top: 0;
   width: 100%;
-  font-weight: normal;
+  height: 100%;
+  background-color: #EEEEEE;
 }
 
-#settings header menu[type="toolbar"] {
-  height: 50px;
-  display: inline;
-  float: right;
+#bookmark-entry-sheet.hidden {
+  display: none;
 }
 
-#settings h3 {
-  font-size: 0.9em;
-  margin: 0 10px;
-  color: #FF5F19;
-  border-bottom: solid 1px #FF5F19;
-  padding: 0;
-}
-
-#settings ul {
-  margin: 0;
-  padding: 0;
-}
-
-#settings li {
-  margin: 10px;
-  list-style-type: none;
-}
-
-#settings header button {
-  color: #fff;
-  height: 50px;
-  float: right;
-}
-
-#settings header button:active {
-  background-color: rgba(0, 0, 0, 0.7);
-}
-
-#settings li button {
-  padding: 10px;
-}
-
-/* This is a dirty hack to hide the bottom toolbar while
- * the keyboard is active, than device-height - 20px (for status bar),
- * then the keyboard is likely activated
+/*
+ * HTTP Authentication Dialog
  */
-/* For the Otoro, 320x480 */
-@media (device-height: 480px) and (max-height: 450px),
-       (device-height: 320px) and (max-height: 290px) {
-  .page-screen #toolbar-end { display: none; }
+#http-authentication-dialog {
+  z-index: 102;
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #EEEEEE;
 }
-/* For the Galaxy SII, 640x480 */
-@media (device-height: 480px) and (max-height: 450px),
-       (device-height: 640px) and (max-height: 610px) {
-  .page-screen #toolbar-end { display: none; }
+
+#http-authentication-dialog.hidden {
+  display: none;
+}
+
+#http-authentication-message {
+  display: block;
+  font-size: 1.5rem;
+  margin: 1rem 2rem;
+}
+
+#http-authentication-message.error {
+  color: #950d0d;
+}
+
+/* The following can be removed once we have a building block
+ * for entry sheets.
+ */
+ #bookmark-entry-sheet label,
+ #http-authentication-dialog label {
+  display: block;
+  position: relative;
+  margin: 1rem 2rem;
+  text-transform: uppercase;
+  font-size: 1.4rem;
+ }
+
+#save-media-status {
+  display: none;
+}
+
+#save-media-status.visible {
+  display: block;
+}
+
+#dialog-overlay {
+  display: none;
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+
+.modal-active #dialog-overlay {
+  display: block;
 }

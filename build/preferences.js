@@ -1,221 +1,214 @@
 
-const { 'classes': Cc, 'interfaces': Ci, 'results': Cr, } = Components;
+'use strict';
 
-function getSubDirectories(directory) {
-  let appsDir = Cc["@mozilla.org/file/local;1"]
-               .createInstance(Ci.nsILocalFile);
-  appsDir.initWithPath(GAIA_DIR);
-  appsDir.append(directory);
+var config;
+var utils = require('./utils');
 
-  let dirs = [];
-  let files = appsDir.directoryEntries;
-  while (files.hasMoreElements()) {
-    let file = files.getNext().QueryInterface(Ci.nsILocalFile);
-    if (file.isDirectory()) {
-      dirs.push(file.leafName);
-    }
+function debug(msg) {
+  //dump('-*- preferences.js ' + msg + '\n');
+}
+
+function execute(options) {
+  config = options;
+  var gaia = utils.getGaia(config);
+  const prefs = [];
+
+  let homescreen = config.HOMESCREEN +
+    (config.GAIA_PORT ? config.GAIA_PORT : '');
+  prefs.push(['browser.manifestURL', homescreen + '/manifest.webapp']);
+  if (homescreen.substring(0, 6) == 'app://') { // B2G bug 773884
+      homescreen += '/index.html';
   }
-  return dirs;
-}
+  prefs.push(['browser.homescreenURL', homescreen]);
 
-function getFileContent(file) {
-  let fileStream = Cc['@mozilla.org/network/file-input-stream;1']
-                   .createInstance(Ci.nsIFileInputStream);
-  fileStream.init(file, 1, 0, false);
+  let domains = [];
+  domains.push(config.GAIA_DOMAIN);
 
-  let converterStream = Cc["@mozilla.org/intl/converter-input-stream;1"]
-                          .createInstance(Ci.nsIConverterInputStream);
-  converterStream.init(fileStream, "utf-8", fileStream.available(),
-                       Ci.nsIConverterInputStream.DEFAULT_REPLACEMENT_CHARACTER);
-
-  let out = {};
-  let count = fileStream.available();
-  converterStream.readString(count, out);
-
-  let content = out.value;
-  converterStream.close();
-  fileStream.close();
-
-  return [content, count];
-}
-
-function getJSON(root, dir, name) {
-  let file = Cc["@mozilla.org/file/local;1"]
-               .createInstance(Ci.nsILocalFile);
-  file.initWithPath(GAIA_DIR);
-  file.append(root);
-  file.append(dir);
-  file.append(name);
-
-  if (!file.exists())
-    return null;
-
-  let [content, length] = getFileContent(file);
-  return JSON.parse(content);
-}
-
-function writeContent(content) {
-  let file = Cc["@mozilla.org/file/local;1"]
-               .createInstance(Ci.nsILocalFile);
-  file.initWithPath(GAIA_DIR);
-  file.append('profile');
-  file.append('user.js');
-
-  let stream = Cc["@mozilla.org/network/file-output-stream;1"]
-                   .createInstance(Ci.nsIFileOutputStream);
-  stream.init(file, 0x02 | 0x08 | 0x20, 0666, 0);
-  stream.write(content, content.length);
-  stream.close();
-}
-
-// XXX Remove all the permission parts here once bug 774716 is resolved
-
-let permissions = {
-  "power": {
-    "urls": [],
-    "pref": "dom.power.whitelist"
-  },
-  "sms": {
-    "urls": [],
-    "pref": "dom.sms.whitelist"
-  },
-  "contacts": {
-    "urls": [],
-    "pref": "dom.mozContacts.whitelist"
-  },
-  "telephony": {
-    "urls": [],
-    "pref": "dom.telephony.app.phone.url"
-  },
-  "mozBluetooth": {
-    "urls": [],
-    "pref": "dom.mozBluetooth.whitelist"
-  },
-  "voicemail": {
-    "urls": [],
-    "pref": "dom.voicemail.whitelist"
-  },
-  "mozbrowser": {
-    "urls": [],
-    "pref": "dom.mozBrowserFramesWhitelist"
-  },
-  "mozApps": {
-    "urls": [],
-    "pref": "dom.mozApps.whitelist"
-  },
-  "mobileconnection": {
-    "urls": [],
-    "pref": "dom.mobileconnection.whitelist"
-  },
-  "mozFM": {
-    "urls": [],
-    "pref": "dom.mozFMRadio.whitelist"
-  },
-  "systemXHR": {
-    "urls": [],
-    "pref": "dom.systemXHR.whitelist"
-  },
-};
-
-let content = "";
-
-let homescreen = HOMESCREEN + (GAIA_PORT ? GAIA_PORT : '');
-content += "user_pref(\"browser.manifestURL\",\"" + homescreen + "/manifest.webapp\");\n\n";
-if (homescreen.substring(0,6) == "app://") { // B2G bug 773884
-    homescreen += "/index.html";
-}
-content += "user_pref(\"browser.homescreenURL\",\"" + homescreen + "\");\n";
-
-let privileges = [];
-let domains = [];
-domains.push(GAIA_DOMAIN);
-
-let appSrcDirs = GAIA_APP_SRCDIRS.split(' ');
-
-appSrcDirs.forEach(function parseDirectory(directoryName) {
-  let directories = getSubDirectories(directoryName);
-  directories.forEach(function readManifests(dir) {
-    let manifest = getJSON(directoryName, dir, "manifest.webapp");
-    if (!manifest)
-      return;
-
-    let rootURL = GAIA_SCHEME + dir + "." + GAIA_DOMAIN + (GAIA_PORT ? GAIA_PORT : '');
-    let domain = dir + "." + GAIA_DOMAIN;
-    privileges.push(rootURL);
-    domains.push(domain);
-
-    let perms = manifest.permissions;
-    if (perms) {
-      for each(let name in perms) {
-        if (!permissions[name])
-          continue;
-
-        permissions[name].urls.push(rootURL);
-
-        // special case for the telephony API which needs full URLs
-        if (name == 'telephony') {
-          permissions[name].urls.push(rootURL + '/index.html');
-
-          if (manifest.background_page)
-            permissions[name].urls.push(rootURL + manifest.background_page);
-          if (manifest.attention_page)
-            permissions[name].urls.push(rootURL + manifest.attention_page);
-        }
-      }
-    }
+  gaia.webapps.forEach(function(webapp) {
+    domains.push(webapp.domain);
   });
-});
 
-//XXX: only here while waiting for https://bugzilla.mozilla.org/show_bug.cgi?id=764718 to be fixed
-content += "user_pref(\"dom.allow_scripts_to_close_windows\", true);\n\n";
+  prefs.push(['network.http.max-connections-per-server', 15]);
+  prefs.push(['dom.mozInputMethod.enabled', true]);
 
-// Probably wont be needed when https://bugzilla.mozilla.org/show_bug.cgi?id=768440 lands
-content += "user_pref(\"dom.send_after_paint_to_content\", true);\n\n";
+  // for https://bugzilla.mozilla.org/show_bug.cgi?id=811605 to let user know
+  //what prefs is for ril debugging
+  prefs.push(['ril.debugging.enabled', false]);
+  // Gaia has no vCard/vCalendar for now. Override MMS version to v1.1:
+  // TODO: remove this override after having vCard/vCalendar implemented in Gaia.
+  // @see bug 885683 - [Messages] MMS doesn't support sending and receiving vCard attachments.
+  // @see bug 905548 - [Messages] MMS doesn't support sending and receiving vCalendar attachments.
+  prefs.push(['dom.mms.version', 0x11]);
+  // TODO: Once platform enabled unsafe WPA-EAP, we have to remove this flag here.
+  // @see Bug 790056 - Enable WPA Enterprise
+  prefs.push(['b2g.wifi.allow_unsafe_wpa_eap', true]);
 
-content += "user_pref(\"b2g.privileged.domains\", \"" + privileges.join(",") + "\");\n\n";
-content += "user_pref(\"network.http.max-connections-per-server\", 15);\n\n";
+  if (config.LOCAL_DOMAINS) {
+    prefs.push(['network.dns.localDomains', domains.join(',')]);
+  }
 
-if (LOCAL_DOMAINS) {
-  content += "user_pref(\"network.dns.localDomains\", \"" + domains.join(",") + "\");\n";
+  if (config.DESKTOP) {
+    // Set system app as default firefox tab
+    prefs.push(['browser.startup.homepage', homescreen]);
+    prefs.push(['startup.homepage_welcome_url', '']);
+    // Disable dialog asking to set firefox as default OS browser
+    prefs.push(['browser.shell.checkDefaultBrowser', false]);
+    // Automatically open devtools on the firefox os panel
+    prefs.push(['devtools.toolbox.host', 'side']);
+    prefs.push(['devtools.toolbox.sidebar.width', 800]);
+    prefs.push(['devtools.toolbox.selectedTool', 'firefox-os-controls']);
+    // Disable session store to ensure having only one tab opened
+    prefs.push(['browser.sessionstore.max_tabs_undo', 0]);
+    prefs.push(['browser.sessionstore.max_windows_undo', 0]);
+    prefs.push(['browser.sessionstore.restore_on_demand', false]);
+    prefs.push(['browser.sessionstore.resume_from_crash', false]);
+
+    prefs.push(['dom.mozBrowserFramesEnabled', true]);
+    prefs.push(['b2g.ignoreXFrameOptions', true]);
+    prefs.push(['network.disable.ipc.security', true]);
+
+    prefs.push(['dom.ipc.tabs.disabled', true]);
+    prefs.push(['browser.ignoreNativeFrameTextSelection', true]);
+    prefs.push(['ui.dragThresholdX', 25]);
+    prefs.push(['dom.w3c_touch_events.enabled', 1]);
+
+    // Enable apis use on the device
+    prefs.push(['dom.sms.enabled', true]);
+    prefs.push(['dom.mozTCPSocket.enabled', true]);
+    prefs.push(['notification.feature.enabled', true]);
+    prefs.push(['dom.sysmsg.enabled', true]);
+    prefs.push(['dom.mozAlarms.enabled', true]);
+    prefs.push(['device.storage.enabled', true]);
+    prefs.push(['device.storage.prompt.testing', true]);
+    prefs.push(['notification.feature.enabled', true]);
+    prefs.push(['dom.datastore.enabled', true]);
+    prefs.push(['dom.testing.datastore_enabled_for_hosted_apps', true]);
+
+    // WebSettings
+    prefs.push(['dom.mozSettings.enabled', true]);
+    prefs.push(['dom.navigator-property.disable.mozSettings', false]);
+    prefs.push(['dom.mozPermissionSettings.enabled', true]);
+
+    // Contacts
+    prefs.push(['dom.mozContacts.enabled', true]);
+    prefs.push(['dom.navigator-property.disable.mozContacts', false]);
+    prefs.push(['dom.global-constructor.disable.mozContact', false]);
+
+    prefs.push(['dom.experimental_forms', true]);
+    prefs.push(['dom.webapps.useCurrentProfile', true]);
+
+    // Settings so desktop shims will work
+    prefs.push(['bluetooth.enabled', true]);
+    prefs.push(['bluetooth.visible', false]);
+    prefs.push(['wifi.enabled', true]);
+    prefs.push(['wifi.suspended', false]);
+
+    // Partial implementation of gonk fonts
+    // See: http://mxr.mozilla.org/mozilla-central/source/modules/libpref/src/init/all.js#3202
+    prefs.push(['font.default.x-western', 'sans-serif']);
+
+    prefs.push(['font.name.serif.x-western', 'Charis SIL Compact']);
+    prefs.push(['font.name.sans-serif.x-western', 'Feura Sans']);
+    prefs.push(['font.name.monospace.x-western', 'Source Code Pro']);
+    prefs.push(['font.name-list.sans-serif.x-western', 'Feura Sans, Roboto']);
+  }
+
+  if (config.DEBUG) {
+    prefs.push(['docshell.device_size_is_page_size', true]);
+    prefs.push(['marionette.defaultPrefs.enabled', true]);
+
+    prefs.push(['nglayout.debug.disable_xul_cache', true]);
+    prefs.push(['nglayout.debug.disable_xul_fastload', true]);
+
+    prefs.push(['javascript.options.showInConsole', true]);
+    prefs.push(['browser.dom.window.dump.enabled', true]);
+    prefs.push(['dom.report_all_js_exceptions', true]);
+    prefs.push(['dom.w3c_touch_events.enabled', 1]);
+    prefs.push(['webgl.verbose', true]);
+
+    // Turn off unresponsive script dialogs so test-agent can keep running...
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=872141
+    prefs.push(['dom.max_script_run_time', 0]);
+
+    // Identity debug messages
+    prefs.push(['toolkit.identity.debug', true]);
+
+    // Disable HTTP caching for now
+    // This makes working with the system app much easier, due to the iframe
+    // caching issue.
+    prefs.push(['network.http.use-cache', false]);
+
+    // Preferences for httpd
+    // (Use JSON.stringify in order to avoid taking care of `\` escaping)
+    prefs.push(['extensions.gaia.dir', config.GAIA_DIR]);
+    prefs.push(['extensions.gaia.domain', config.GAIA_DOMAIN]);
+    prefs.push(['extensions.gaia.port',
+      parseInt(config.GAIA_PORT.replace(/:/g, ''))]);
+    prefs.push(['extensions.gaia.appdirs', config.GAIA_APPDIRS]);
+    prefs.push(['extensions.gaia.locales_debug_path',
+      config.GAIA_LOCALES_PATH]);
+    prefs.push(['extensions.gaia.official', Boolean(config.OFFICIAL)]);
+    prefs.push(['extensions.gaia.locales_file', config.LOCALES_FILE]);
+    // Bug 952901: remove getLocaleBasedir() if bug 952900 fixed.
+    prefs.push(['extensions.gaia.locale_basedir',
+      utils.getLocaleBasedir(config.LOCALE_BASEDIR)]);
+
+    let suffix = config.GAIA_DEV_PIXELS_PER_PX === '1' ?
+                 '' : '@' + config.GAIA_DEV_PIXELS_PER_PX + 'x';
+    prefs.push(['extensions.gaia.device_pixel_suffix', suffix]);
+
+    let appPathList = [];
+    gaia.webapps.forEach(function(webapp) {
+      appPathList.push(webapp.sourceAppDirectoryName + '/' +
+                       webapp.sourceDirectoryName);
+    });
+    prefs.push(['extensions.gaia.app_relative_path', appPathList.join(' ')]);
+  }
+
+  // We have to allow installing helper addons from profile extension folder
+  // in both debug and browser compatibility modes
+  if (config.DEBUG || config.DESKTOP) {
+    prefs.push(['extensions.autoDisableScopes', 0]);
+  }
+
+  if (config.DEVICE_DEBUG) {
+    // Bug 832000: Until unix domain socket are implemented,
+    // force enable content actor
+    prefs.push(['devtools.debugger.enable-content-actors', true]);
+    prefs.push(['devtools.debugger.prompt-connection', false]);
+    prefs.push(['devtools.debugger.forbid-certified-apps', false]);
+    prefs.push(['b2g.adb.timeout', 0]);
+  }
+
+  function writePrefs() {
+    let userJs = utils.getFile(config.PROFILE_DIR, 'user.js');
+    let content = prefs.map(function(entry) {
+      return 'user_pref(\'' + entry[0] + '\', ' +
+        JSON.stringify(entry[1]) + ');';
+    }).join('\n');
+    utils.writeContent(userJs, content + '\n');
+    debug('\n' + content);
+  }
+
+  function setPrefs() {
+    prefs.forEach(function(entry) {
+      if (typeof entry[1] == 'string') {
+        Services.prefs.setCharPref(entry[0], entry[1]);
+      } else if (typeof entry[1] == 'boolean') {
+        Services.prefs.setBoolPref(entry[0], entry[1]);
+      } else if (typeof entry[1] == 'number') {
+        Services.prefs.setIntPref(entry[0], entry[1]);
+      } else {
+        throw new Error('Unsupported pref type: ' + typeof entry[1]);
+      }
+    });
+  }
+
+  if (gaia.engine === 'xpcshell') {
+    writePrefs();
+  } else if (gaia.engine === 'b2g') {
+    setPrefs();
+  }
 }
 
-for (let name in permissions) {
-  let perm = permissions[name];
-  content += "user_pref(\"" + perm.pref + "\",\"" + perm.urls.join(",") + "\");\n";
-}
-
-if (DEBUG) {
-  content += "\n";
-  content += "user_pref(\"marionette.defaultPrefs.enabled\", true);\n";
-  content += "user_pref(\"b2g.remote-js.enabled\", true);\n";
-  content += "user_pref(\"b2g.remote-js.port\", 4242);\n";
-  content += "user_pref(\"javascript.options.showInConsole\", true);\n";
-  content += "user_pref(\"nglayout.debug.disable_xul_cache\", true);\n";
-  content += "user_pref(\"browser.dom.window.dump.enabled\", true);\n";
-  content += "user_pref(\"javascript.options.strict\", true);\n";
-  content += "user_pref(\"dom.report_all_js_exceptions\", true);\n";
-  content += "user_pref(\"nglayout.debug.disable_xul_fastload\", true);\n";
-  content += "user_pref(\"extensions.autoDisableScopes\", 0);\n";
-  content += "user_pref(\"browser.startup.homepage\", \"" + homescreen + "\");\n";
-
-  content += "user_pref(\"dom.mozBrowserFramesEnabled\", true);\n";
-  content += "user_pref(\"b2g.ignoreXFrameOptions\", true);\n";
-  content += "user_pref(\"dom.sms.enabled\", true);\n";
-  content += "user_pref(\"dom.mozContacts.enabled\", true);\n";
-  content += "user_pref(\"dom.mozSettings.enabled\", true);\n";
-  content += "user_pref(\"device.storage.enabled\", true);\n";
-
-  // Preferences for httpd
-  // (Use JSON.stringify in order to avoid taking care of `\` escaping)
-  content += "user_pref(\"extensions.gaia.dir\", " + JSON.stringify(GAIA_DIR) + ");\n";
-  content += "user_pref(\"extensions.gaia.domain\", " + JSON.stringify(GAIA_DOMAIN) + ");\n";
-  content += "user_pref(\"extensions.gaia.port\", "+ GAIA_PORT.replace(/:/g, "") + ");\n";
-  content += "user_pref(\"extensions.gaia.app_src_dirs\", " + JSON.stringify(GAIA_APP_SRCDIRS) + ");\n";
-  content += "user_pref(\"extensions.gaia.app_relative_path\", " + JSON.stringify(GAIA_APP_RELATIVEPATH) + ");\n";
-
-  content += "\n";
-}
-
-writeContent(content);
-dump("\n" + content);
-
+exports.execute = execute;

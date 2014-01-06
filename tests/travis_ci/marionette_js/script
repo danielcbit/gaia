@@ -1,0 +1,3 @@
+#! /bin/bash -v
+
+REPORTER=spec make test-integration

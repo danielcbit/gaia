@@ -1,50 +1,58 @@
-// GestureDetector.js: generate events for one and two finger gestures
-//
-// A GestureDetector object listens for touch and mouse events on a specified
-// element and generates higher-level events that describe one and two finger
-// gestures on the element. The hope is that this will be useful for webapps
-// that need to run on mouse (or trackpad)-based desktop browsers and also
-// in touch-based mobile devices.
-//
-// Supported events:
-//
-//  tap        like a click event
-//  dbltap     like dblclick
-//  pan        one finger motion, or mousedown followed by mousemove
-//  swipe      when a finger is released following pan events
-//  holdstart  touch (or mousedown) and hold. Must set an option to get these.
-//  holdmove   motion after a holdstart event
-//  holdend    when the finger or mouse goes up after holdstart/holdmove
-//  transform  2-finger pinch and twist gestures for scaling and rotation
-//             These are touch-only; they can't be simulated with a mouse.
-//
-// Each of these events is a bubbling CustomEvent with important details
-// in the event.detail field. The event details are not yet stable
-// and are not yet documented. See the calls to emitEvent() for details.
-//
-// To use this library, create a GestureDetector object by passing an
-// element to the GestureDetector() constructor and then calling
-// startDetecting() on it. The element will be the target of all the
-// emitted gesture events. You can also pass an optional object as the
-// second constructor argument. If you're interested in
-// holdstart/holdmove/holdend events, pass {holdEvents:true} as this
-// second argument. Otherwise they will not be generated.
-//
-// Implementation note: event processing is done with a simple
-// finite-state machine. This means that in general, the various kinds
-// of gestures are mutually exclusive. You won't get pan events until
-// your finger or mouse has moved more than a minimum threshold, for
-// example, but it does, the FSM enters a new state in which it can
-// emit pan and swipe events and cannot emit hold events. Similarly,
-// if you've started a 1 finger pan/swipe gesture and accidentally
-// touch with a second finger, you'll continue to get pan events, and
-// won't suddenly start getting 2-finger transform events.
-//
-// This library never calls preventDefault() or stopPropagation on any
-// of the events it processes, so the raw touch or mouse events should
-// still be available for other code to process. It is not clear to me
-// whether this is a feature or a bug.
-//
+/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- /
+/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
+
+'use strict';
+
+/**
+ * GestureDetector.js: generate events for one and two finger gestures.
+ *
+ * A GestureDetector object listens for touch and mouse events on a specified
+ * element and generates higher-level events that describe one and two finger
+ * gestures on the element. The hope is that this will be useful for webapps
+ * that need to run on mouse (or trackpad)-based desktop browsers and also in
+ * touch-based mobile devices.
+ *
+ * Supported events:
+ *
+ *  tap        like a click event
+ *  dbltap     like dblclick
+ *  pan        one finger motion, or mousedown followed by mousemove
+ *  swipe      when a finger is released following pan events
+ *  holdstart  touch (or mousedown) and hold. Must set an option to get these.
+ *  holdmove   motion after a holdstart event
+ *  holdend    when the finger or mouse goes up after holdstart/holdmove
+ *  transform  2-finger pinch and twist gestures for scaling and rotation
+ *             These are touch-only; they can't be simulated with a mouse.
+ *
+ * Each of these events is a bubbling CustomEvent with important details in the
+ * event.detail field. The event details are not yet stable and are not yet
+ * documented. See the calls to emitEvent() for details.
+ *
+ * To use this library, create a GestureDetector object by passing an element to
+ * the GestureDetector() constructor and then calling startDetecting() on it.
+ * The element will be the target of all the emitted gesture events. You can
+ * also pass an optional object as the second constructor argument. If you're
+ * interested in holdstart/holdmove/holdend events, pass {holdEvents:true} as
+ * this second argument. Otherwise they will not be generated.
+ * If you want to customize the pan threshold, pass
+ * {panThreshold:X, mousePanThreshold:Y} (X and Y in pixels) in the options
+ * argument.
+ *
+ * Implementation note: event processing is done with a simple finite-state
+ * machine. This means that in general, the various kinds of gestures are
+ * mutually exclusive. You won't get pan events until your finger or mouse has
+ * moved more than a minimum threshold, for example, but it does, the FSM enters
+ * a new state in which it can emit pan and swipe events and cannot emit hold
+ * events. Similarly, if you've started a 1 finger pan/swipe gesture and
+ * accidentally touch with a second finger, you'll continue to get pan events,
+ * and won't suddenly start getting 2-finger transform events.
+ *
+ * This library never calls preventDefault() or stopPropagation on any of the
+ * events it processes, so the raw touch or mouse events should still be
+ * available for other code to process. It is not clear to me whether this is a
+ * feature or a bug.
+ */
+
 var GestureDetector = (function() {
 
   //
@@ -53,8 +61,12 @@ var GestureDetector = (function() {
   function GD(e, options) {
     this.element = e;
     this.options = options || {};
+    this.options.panThreshold = this.options.panThreshold || GD.PAN_THRESHOLD;
+    this.options.mousePanThreshold =
+      this.options.mousePanThreshold || GD.MOUSE_PAN_THRESHOLD;
     this.state = initialState;
     this.timers = {};
+    this.listeningForMouseEvents = true;
   }
 
   //
@@ -85,8 +97,31 @@ var GestureDetector = (function() {
 
     // If this is a touch event handle each changed touch separately
     if (e.changedTouches) {
+      // If we ever receive a touch event, then we know we are on a
+      // touch device and we stop listening for mouse events. If we
+      // don't do that, then the touchstart touchend mousedown mouseup
+      // generated by a single tap gesture will cause us to output
+      // tap tap dbltap, which is wrong
+      if (this.listeningForMouseEvents) {
+        this.listeningForMouseEvents = false;
+        this.element.removeEventListener('mousedown', this);
+      }
+
+      // XXX https://bugzilla.mozilla.org/show_bug.cgi?id=785554
+      // causes touchend events to list all touches as changed, so
+      // warn if we see that bug
+      if (e.type === 'touchend' && e.changedTouches.length > 1) {
+        console.warn('gesture_detector.js: spurious extra changed touch on ' +
+                     'touchend. See ' +
+                     'https://bugzilla.mozilla.org/show_bug.cgi?id=785554');
+      }
+
       for (var i = 0; i < e.changedTouches.length; i++) {
         handler(this, e, e.changedTouches[i]);
+        // The first changed touch might have changed the state of the
+        // FSM. We need this line to workaround the bug 785554, but it is
+        // probably the right thing to have here, even once that bug is fixed.
+        handler = this.state[e.type];
       }
     }
     else {    // Otherwise, just dispatch the event to the handler
@@ -130,22 +165,28 @@ var GestureDetector = (function() {
     var event = this.element.ownerDocument.createEvent('CustomEvent');
     event.initCustomEvent(type, true, true, detail);
     this.target.dispatchEvent(event);
-  }
+  };
 
   //
   // Tuneable parameters
   //
   GD.HOLD_INTERVAL = 1000;     // Hold events after 1000 ms
-  GD.PAN_THRESHOLD = 50;       // 50 pixels movement before touch panning
-  GD.MOUSE_PAN_THRESHOLD = 25; // Mice are more precise, so smaller threshold
+  GD.PAN_THRESHOLD = 20;       // 20 pixels movement before touch panning
+  GD.MOUSE_PAN_THRESHOLD = 15; // Mice are more precise, so smaller threshold
   GD.DOUBLE_TAP_DISTANCE = 50;
   GD.DOUBLE_TAP_TIME = 500;
   GD.VELOCITY_SMOOTHING = .5;
 
   // Don't start sending transform events until the gesture exceeds a threshold
-  GD.SCALE_THRESHOLD = 40;     // pixels
+  GD.SCALE_THRESHOLD = 20;     // pixels
   GD.ROTATE_THRESHOLD = 22.5;  // degrees
 
+  // For pans and zooms, we compute new starting coordinates that are part way
+  // between the initial event and the event that crossed the threshold so that
+  // the first event we send doesn't cause a big lurch. This constant must be
+  // between 0 and 1 and says how far along the line between the initial value
+  // and the new value we pick
+  GD.THRESHOLD_SMOOTHING = 0.9;
 
   //
   // Helpful shortcuts and utility functions
@@ -210,6 +251,19 @@ var GestureDetector = (function() {
     });
   }
 
+  // Given coordinates objects c1 and c2, return a new coordinates object
+  // representing a point and time along the line between those points.
+  // The position of the point is controlled by the THRESHOLD_SMOOTHING constant
+  function between(c1, c2) {
+    var r = GD.THRESHOLD_SMOOTHING;
+    return Object.freeze({
+      screenX: floor(c1.screenX + r * (c2.screenX - c1.screenX)),
+      screenY: floor(c1.screenY + r * (c2.screenY - c1.screenY)),
+      clientX: floor(c1.clientX + r * (c2.clientX - c1.clientX)),
+      clientY: floor(c1.clientY + r * (c2.clientY - c1.clientY)),
+      timeStamp: floor(c1.timeStamp + r * (c2.timeStamp - c1.timeStamp))
+    });
+  }
 
   // Compute the distance between two touches
   function touchDistance(t1, t2) {
@@ -266,6 +320,7 @@ var GestureDetector = (function() {
       d.vx = d.vy = null;
       d.startDistance = d.lastDistance = null;
       d.startDirection = d.lastDirection = null;
+      d.lastMidpoint = null;
       d.scaled = d.rotated = null;
     },
 
@@ -314,8 +369,8 @@ var GestureDetector = (function() {
       if (t.identifier !== d.touch1)
         return;
 
-      if (abs(t.screenX - d.start.screenX) > GD.PAN_THRESHOLD ||
-          abs(t.screenY - d.start.screenY) > GD.PAN_THRESHOLD) {
+      if (abs(t.screenX - d.start.screenX) > d.options.panThreshold ||
+          abs(t.screenY - d.start.screenY) > d.options.panThreshold) {
         d.clearTimer('holdtimeout');
         d.switchTo(panStartedState, e, t);
       }
@@ -360,6 +415,13 @@ var GestureDetector = (function() {
   var panStartedState = {
     name: 'panStartedState',
     init: function(d, e, t) {
+      // Panning doesn't start until the touch has moved more than a
+      // certain threshold. But we don't want the pan to have a jerky
+      // start where the first event is a big distance. So proceed as
+      // pan actually started at a point along the path between the
+      // first touch and this current touch.
+      d.start = d.last = between(d.start, coordinates(e, t));
+
       // If we transition into this state with a touchmove event,
       // then process it with that handler. If we don't do this then
       // we can end up with swipe events that don't know their velocity
@@ -533,8 +595,12 @@ var GestureDetector = (function() {
       // the transforms are too jittery even when you try to hold your
       // fingers still.
       if (!d.scaled) {
-        if (abs(distance - d.startDistance) > GD.SCALE_THRESHOLD)
+        if (abs(distance - d.startDistance) > GD.SCALE_THRESHOLD) {
           d.scaled = true;
+          d.startDistance = d.lastDistance =
+            floor(d.startDistance +
+                  GD.THRESHOLD_SMOOTHING * (distance - d.startDistance));
+        }
         else
           distance = d.startDistance;
       }
@@ -566,6 +632,7 @@ var GestureDetector = (function() {
 
         d.lastDistance = distance;
         d.lastDirection = direction;
+        d.lastMidpoint = midpoint;
       }
     },
 
@@ -586,6 +653,25 @@ var GestureDetector = (function() {
       }
       else
         return; // It was a touch we weren't tracking
+
+      // If we emitted any transform events, now we need to emit
+      // a transformend event to end the series.  The details of this
+      // event use the values from the last touchmove, and the
+      // relative amounts will 1 and 0, but they are included for
+      // completeness even though they are not useful.
+      if (d.scaled || d.rotated) {
+        d.emitEvent('transformend', {
+          absolute: { // transform details since gesture start
+            scale: d.lastDistance / d.startDistance,
+            rotate: touchRotation(d.startDirection, d.lastDirection)
+          },
+          relative: { // nothing has changed relative to the last touchmove
+            scale: 1,
+            rotate: 0
+          },
+          midpoint: d.lastMidpoint
+        });
+      }
 
       d.switchTo(afterTransformState);
     }
@@ -631,8 +717,8 @@ var GestureDetector = (function() {
       // then switch to the mouse panning state. Otherwise remain
       // in this state
 
-      if (abs(e.screenX - d.start.screenX) > GD.MOUSE_PAN_THRESHOLD ||
-          abs(e.screenY - d.start.screenY) > GD.MOUSE_PAN_THRESHOLD) {
+      if (abs(e.screenX - d.start.screenX) > d.options.mousePanThreshold ||
+          abs(e.screenY - d.start.screenY) > d.options.mousePanThreshold) {
         d.clearTimer('holdtimeout');
         d.switchTo(mousePannedState, e);
       }
@@ -709,6 +795,13 @@ var GestureDetector = (function() {
   var mousePannedState = {
     name: 'mousePannedState',
     init: function(d, e) {
+      // Panning doesn't start until the mouse has moved more than
+      // a certain threshold. But we don't want the pan to have a jerky
+      // start where the first event is a big distance. So reset the
+      // starting point to a point between the start point and this
+      // current point
+      d.start = d.last = between(d.start, mouseCoordinates(e));
+
       // If we transition into this state with a mousemove event,
       // then process it with that handler. If we don't do this then
       // we can end up with swipe events that don't know their velocity
@@ -801,3 +894,4 @@ var GestureDetector = (function() {
 
   return GD;
 }());
+

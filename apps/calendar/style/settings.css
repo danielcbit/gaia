@@ -1,135 +1,148 @@
-/* calendar settings */
+body[data-path^='/event'] #time-views,
+body[data-path^='/month'] #time-views,
+body[data-path^='/day'] #time-views,
+body[data-path^='/week'] #time-views {
+  z-index: 200;
+  transform: translateX(0%);
+  transition: transform 0.5s ease-in-out;
+}
 
-body[data-path^="/settings/"][role="app"] #wrapper {
+
+body[data-path^='/advanced-settings'] #time-views,
+body[data-path^='/select-preset'] #time-views,
+body[data-path^='/create-account'] #time-views,
+body[data-path^='/settings'] #time-views {
   position: relative;
-  -moz-transform: translateX(75%);
-  box-shadow: 1px 1px 5px 5px #222;
-  z-index: 2;
-
-  -moz-transition: -moz-transform 0.1s ease-in-out;
-}
-
-body[role="app"] #wrapper {
-  -moz-transform: translateX(0%);
-  -moz-transition: -moz-transform 0.1s ease-in-out;
-}
-
-#settings.active {
-  display: block;
+  transform: translateX(80%);
+  transition: transform 0.5s ease-in-out;
 }
 
 #settings {
-  height: 100%;
-  width: 75%;
-  position: absolute;
-  background-color: #303540;
+  font-size: 1.7rem;
   color: white;
-  font-size: 1.6rem;
+  width: 80%;
+  z-index: 0;
+  visibility: visible;
 }
 
-#settings header h1 {
-  width: -moz-calc(100% - 30px);
+
+#settings ol.calendars {
+  height: calc(100% - 9rem);
+  overflow-y: scroll;
 }
 
-#settings > section {
-  display: none;
-}
-
-#settings > section.active {
+#settings .calendars label > .name {
   display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  width: -moz-calc(100% - 2rem);
+  height: 100%;
 }
 
-#settings header {
-  background: #242931;
-  padding: 0.9rem 1rem;
-  font-size: 2.1rem;
-  font-weight: normal;
-  box-shadow: none;
-  border-bottom: 1px solid #454B53;
+#settings .calendars label > span {
+  display: block;
+  float: left;
+}
+
+#settings .calendars .error label {
+  background: transparent url('icons/accountwarning.png') no-repeat 2rem 0.5rem;
+  padding-left: 6rem;
 }
 
 #settings .calendars label {
   display: block;
-  padding: 2rem 1.6rem;
-  border-bottom: 1px solid #454B53;
+  height: 100%;
+  width: 100%;
+  padding: 0 3rem;
+  border-bottom: 0.1rem solid #333b41;
   -moz-user-select: none;
-  user-select: none;
 }
 
-#settings a.settings {
+#settings .calendars li {
+  width: 100%;
+  height: 3.9rem;
+  line-height: 3.9rem;
+}
+
+#settings .calendars .calendar-color {
+  float: left;
+  width: 0.5rem;
+  display: block;
+  height: 100%;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.2) 0%,
+    rgba(255,255,255,0) 40%,
+    rgba(0, 0, 0, 0.3) 100%
+  )
+}
+
+#settings > menu {
   position: absolute;
-  bottom: 1rem;
-  left: 1rem;
-  text-indent: -1000em;
-  background: transparent url('/style/icons/ActionIcons_30x30_settings.png') no-repeat;
-  width: 30px;
-  height: 30px;
+  bottom: 0;
+  height: 4rem;
+  padding: 0.5rem 0;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+#settings .sync {
+  display: none;
+}
+
+#settings .sync.active {
+  display: block;
+}
+
+.pending-operation #settings .sync {
+  display: none;
+}
+
+#settings .settings {
+  width: 5.5rem;
+  height: 4rem;
+  background: transparent url('/style/icons/settings.png') no-repeat center / 3rem;
+  font-size: 0;
+  display: block;
+}
+
+#settings .settings:active {
+  background-color: #008aaa;
+}
+
+#settings .calendars > li label {
+  text-transform: none;
 }
 
 #settings .calendars input[type="checkbox"] {
  display: none;
 }
 
-
-#settings .calendars input[type="checkbox"]:checked + span {
-  width: 14px;
-  height: 14px;
-  background: transparent url('/style/icons/checkmark.png') no-repeat;
+#settings .calendars input[type="checkbox"]:checked + span:after {
+  width: 2.2rem;
+  height: 1.9rem;
+  background: transparent url('/style/icons/checkmark.png') no-repeat center / 1.4rem;
 }
 
-#settings .calendars input[type="checkbox"]+span {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  float: right;
+#settings .calendars input[type="checkbox"] + span:after {
+  left: auto;
+  top: 0.9rem;
+  right: 1.3rem;
+  background: none;
+  margin: 0;
 }
 
-/* advanced settings */
-
-#advanced-setting-selection:target {
-  position: absolute;
-  bottom: 5.5rem;
-  left: 1.5rem;
-  display: block;
-  width: 20rem;
-  background: white;
-  border: 1px solid black;
+#settings [role="toolbar"] {
+  width: 80% !important;
 }
 
-#advanced-setting-selection {
-  display: none
+body[role="application"] [role="toolbar"] li button:active {
+  background-color: #008aaa;
+  background-size: 3rem auto;
 }
 
-#advanced-setting-selection li {
-  border-bottom: 1px solid #CCC;
-}
-
-#advanced-setting-selection a {
-  color: black;
-  display: block;
-  padding: 1rem;
-}
-
-#advanced-settings-view > header h1 {
-  width: -moz-calc(100% - 40px);
-}
-
-#advanced-settings-view > section {
-  margin-top: 1rem;
-  font-size: 1.5rem;
-}
-
-#advanced-settings-view > section h2 {
-  padding: 1rem;
-  background-color: #CCC;
-}
-
-#advanced-settings-view > section ol li a.remove {
-  color: red;
-  padding: 1rem;
-}
-
-#advanced-settings-view > section ol li {
-  border-bottom: 1px solid #CCC;
-  padding: 2rem;
+body[role="application"] [role="toolbar"] li button.update {
+  background-image: url("icons/update.png");
+  background-repeat: no-repeat;
+  background-position: center center;
 }

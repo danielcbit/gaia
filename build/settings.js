@@ -1,163 +1,140 @@
-/* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- /
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this file,
- * You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 'use strict';
 
-const SETTINGS_DEBUG = false;
-function debug(msg) {
-  if (SETTINGS_DEBUG)
-    dump("-*- Populate SettingsDB: " + msg + "\n");
+var utils = require('./utils');
+
+function setWallpaper(settings, config) {
+  // Grab the default wallpaper and convert it into a base64 string
+  let devpixels = '';
+  if (config.GAIA_DEV_PIXELS_PER_PX != '1') {
+    devpixels = '@' + config.GAIA_DEV_PIXELS_PER_PX + 'x';
+  }
+
+  let wallpaper = utils.resolve(
+    config.GAIA_DISTRIBUTION_DIR + '/wallpapers/default' +
+    devpixels + '.jpg', config.GAIA_DIR);
+
+  if (!wallpaper.exists()) {
+    wallpaper = utils.resolve(
+      config.GAIA_DISTRIBUTION_DIR + '/wallpapers/default.jpg',
+      config.GAIA_DIR);
+  }
+
+  if (!wallpaper.exists()) {
+    wallpaper = utils.resolve(
+      'build/wallpaper' + devpixels + '.jpg', config.GAIA_DIR);
+  }
+
+  if (!wallpaper.exists()) {
+    wallpaper = utils.resolve('build/wallpaper.jpg',
+      config.GAIA_DIR);
+  }
+  settings['wallpaper.image'] = utils.getFileAsDataURI(wallpaper);
 }
 
-dump("Populate settingsdb in:" + PROFILE_DIR + "\n");
+function setRingtone(settings, config) {
+  // Grab ringer_classic_courier.opus and convert it into a base64 string
+  let ringtone_name = 'shared/resources/media/ringtones/' +
+    'ringer_classic_courier.opus';
+  let ringtone = utils.resolve(ringtone_name,
+    config.GAIA_DIR);
 
-// Todo: Get a list of settings
-var settings = [
- new Setting("alarm.enabled", false),
- new Setting("accessibility.invert", false),
- new Setting("bluetooth.enabled", false),
- new Setting("debug.grid.enabled", false),
- new Setting("debug.fps.enabled", false),
- new Setting("debug.paint-flashing.enabled", false),
- new Setting("devtools.debugger.force-local", true),
- new Setting("devtools.debugger.log", false),
- new Setting("devtools.debugger.remote-enabled", false),
- new Setting("devtools.debugger.remote-port", 6000),
- new Setting("homescreen.ring", 'classic.wav'),
- new Setting("homescreen.wallpaper", "default.png"),
- new Setting("keyboard.layouts.english", true),
- new Setting("keyboard.layouts.dvorak", false),
- new Setting("keyboard.layouts.otherlatins", false),
- new Setting("keyboard.layouts.cyrillic", false),
- new Setting("keyboard.layouts.arabic", false),
- new Setting("keyboard.layouts.hebrew", false),
- new Setting("keyboard.layouts.zhuyin", false),
- new Setting("keyboard.layouts.pinyin", false),
- new Setting("keyboard.layouts.greek", false),
- new Setting("keyboard.layouts.japanese", false),
- new Setting("keyboard.layouts.portuguese", false),
- new Setting("keyboard.layouts.spanish", false),
- new Setting("keyboard.vibration", false),
- new Setting("keyboard.clicksound", false),
- new Setting("language.current", "en-US"),
- new Setting("lockscreen.passcode-lock.code", "0000"),
- new Setting("lockscreen.passcode-lock.enabled", false),
- new Setting("lockscreen.enabled", true),
- new Setting("lockscreen.locked", true),
- new Setting("lockscreen.wallpaper", "balloon.png"),
- new Setting("phone.ring.incoming", true),
- new Setting("phone.ring.keypad", true),
- new Setting("phone.vibration.incoming", true),
- new Setting("ril.data.enabled", false),
- new Setting("ril.data.apn", ""),
- new Setting("ril.data.passwd", ""),
- new Setting("ril.data.mmsc", ""),
- new Setting("ril.data.mmsproxy", ""),
- new Setting("ril.data.mmsport", 0),
- new Setting("ril.data.roaming.enabled", false),
- new Setting("ril.data.user", ""),
- new Setting("ril.radio.disabled", false),
- new Setting("screen.automatic-brightness", true),
- new Setting("screen.brightness", 1),
- new Setting("screen.timeout", 60),
- new Setting("sms.ring.received", true),
- new Setting("sms.vibration.received", true),
- new Setting("tethering.usb.enabled", false),
- new Setting("tethering.wifi.enabled", false),
- new Setting("tethering.wifi.connectedClients", 0),
- new Setting("tethering.usb.connectedClients", 0),
- new Setting("ums.enabled", false),
- new Setting("ums.mode", ""),
- new Setting("wifi.enabled", true),
- new Setting("wifi.notification", false)
-];
+  settings['dialer.ringtone'] = utils.getFileAsDataURI(ringtone);
+}
 
-// Ensure there is no duplicate
-for (let i in settings) {
-  var settingName = settings[i].name;
-  for (let j in settings) {
-    if (i === j)
-      continue;
+function setNotification(settings, config) {
+  // Grab notifier_bell.opus and convert it into a base64 string
+  let notification_name = 'shared/resources/media/notifications/' +
+    'notifier_bell.opus';
+  let notification = utils.resolve(notification_name,
+    config.GAIA_DIR);
+  settings['notification.ringtone'] = utils.getFileAsDataURI(notification);
+}
 
-    if (settingName === settings[j].name) {
-      throw new Error('There is a at least 2 settings called: ' + settingName);
+function overrideSettings(settings, config) {
+  // See if any override file exists and eventually override settings
+  let override = utils.resolve(config.SETTINGS_PATH,
+    config.GAIA_DIR);
+  if (override.exists()) {
+    let content = utils.getJSON(override);
+    for (let key in content) {
+      settings[key] = content[key];
     }
   }
 }
 
-function Setting(aName, aValue) {
-  this.name = aName;
-  this.value = aValue;
-  if (typeof Setting.counter == 'undefined') {
-    Setting.counter = 0;
+function writeSettings(settings, config) {
+  // Finally write the settings file
+  let settingsFile = utils.getFile(config.PROFILE_DIR, 'settings.json');
+  let content = JSON.stringify(settings);
+  utils.writeContent(settingsFile, content + '\n');
+}
+
+function execute(config) {
+  var settingsFile = utils.getFile(config.GAIA_DIR, 'build',
+    'common-settings.json');
+
+  if (!settingsFile.exists()) {
+    throw new Error('file not found: ' + settingsFile.path);
   }
 
-  Setting.counter++;
-}
+  var settings = utils.getJSON(settingsFile);
 
-const { 'classes': Cc, 'interfaces': Ci, 'results': Cr, 'utils' : Cu } = Components;
+  if (config.TARGET_BUILD_VARIANT != 'user') {
+    // We want the console to be disabled for device builds using the user variant.
+    settings['debug.console.enabled'] = true;
 
-(function registerProfileDirectory() {
+    // Activate developer menu under the system menu when long pressing
+    // the power button by default for devs.
+    settings['developer.menu.enabled'] = true;
 
-  let directoryProvider = {
-    getFile: function provider_getFile(prop, persistent) {
-      persistent.value = true;
-      debug("prop: " + prop);
-      if (prop != "ProfD" && prop != "ProfLDS") {
-        throw Cr.NS_ERROR_FAILURE;
-      }
-
-      let file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile)
-      file.initWithPath(PROFILE_DIR);
-      return file;
-    },
-
-    QueryInterface: function provider_queryInterface(iid) {
-      if (iid.equals(Ci.nsIDirectoryServiceProvider) ||
-          iid.equals(Ci.nsISupports)) {
-        return this;
-      }
-      throw Cr.NS_ERROR_NO_INTERFACE;
-    }
-  };
-
-  Cc["@mozilla.org/file/directory_service;1"]
-    .getService(Ci.nsIProperties)
-    .QueryInterface(Ci.nsIDirectoryService)
-    .registerProvider(directoryProvider);
-})();
-
-let settingsDBService = Cc["@mozilla.org/settingsService;1"].getService(Ci.nsISettingsService);
-
-let callback = {
-  handle : function handle(name, result)
-  {
-    Setting.counter--;
-  },
-
-  handleError : function handleError(name)
-  {
-    dump("SettingsDB Error: " + name);
-    Setting.counter--;
+    // Turn on APZ for developers. The final activation for everything will
+    // be done in bug 909877, but it will be good to get as many regressions
+    // and bugs as possible before turning it on definitively.
+    settings['apz.force-enable'] = true;
   }
+
+  // Set the homescreen URL
+  settings['homescreen.manifestURL'] = utils.gaiaManifestURL('homescreen',
+    config.GAIA_SCHEME, config.GAIA_DOMAIN, config.GAIA_PORT);
+
+  // Set the ftu manifest URL
+  if (config.NOFTU === '0') {
+    settings['ftu.manifestURL'] = utils.gaiaManifestURL('communications',
+      config.GAIA_SCHEME, config.GAIA_DOMAIN, config.GAIA_PORT);
+  }
+
+  // Set the rocketbar URL
+  settings['rocketbar.searchAppURL'] = utils.gaiaOriginURL('search',
+    config.GAIA_SCHEME, config.GAIA_DOMAIN, config.GAIA_PORT) + '/index.html';
+
+  if (config.PRODUCTION === '1') {
+    settings['feedback.url'] = 'https://input.mozilla.org/api/v1/feedback/';
+  }
+
+  settings['language.current'] = config.GAIA_DEFAULT_LOCALE;
+  settings['devtools.debugger.remote-enabled'] = config.REMOTE_DEBUGGER == true;
+
+  if (config.DEVICE_DEBUG) {
+    settings['devtools.debugger.remote-enabled'] = true;
+    settings['screen.timeout'] = 0;
+    settings['lockscreen.enabled'] = false;
+    settings['lockscreen.locked'] = false;
+  }
+
+  // Run all asynchronous code before overwriting and writing settings file
+  setWallpaper(settings, config);
+  setRingtone(settings, config);
+  setNotification(settings, config);
+  overrideSettings(settings, config);
+  writeSettings(settings, config);
+
+  // Ensure not quitting xpcshell before all asynchronous code is done
+  utils.processEvents(function(){return {wait : false}});
+  return settings
 }
-
-let lock = settingsDBService.getLock();
-
-for (let i in settings) {
-  debug("add seting: " + settings[i].name + ", " + settings[i].value);
-  lock.set(settings[i].name, settings[i].value, callback);
-}
-
-var thread = Components.classes["@mozilla.org/thread-manager;1"]
-                       .getService(Components.interfaces.nsIThreadManager)
-                       .currentThread;
-
-while ((Setting.counter > 0) || thread.hasPendingEvents()) {
-  thread.processNextEvent(true);
-}
-
-dump("SettingsDB filled.\n");
+exports.execute = execute;
+exports.setWallpaper = setWallpaper;
+exports.setRingtone = setRingtone;
+exports.setNotification = setNotification;
+exports.overrideSettings = overrideSettings;
+exports.writeSettings = writeSettings;

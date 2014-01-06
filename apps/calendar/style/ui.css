@@ -1,29 +1,3 @@
-/*
-COLORS
-
-BUSY BACKGROUND: #CCC
-BORDER: #AAA;
-CALENDER BORDER: #B0B0B0
-MONTH DAY BG: #FFF
-MONTH DAY PAST BG: #A8A8A8
-MONTH DAY PAST COLOR: #666
-MONTH DAY TODAY BORDER COLOR: #444
-MONTH DAY SELECTED BG: #444
-MONTH DAY SELECTED COLOR: white
-
-MONTHS DAY TOOLBAR BG: #E2E2E2
-MONTHS DAY EVENT: #CACACA 
-
-EVENT TIME COLOR: #333
-*/
-
-
-/* Device Layouts */
-
-@media screen and (max-width: 480px) {
-
-}
-
 /* loading */
 
 body.loading {
@@ -32,28 +6,62 @@ body.loading {
 
 /* general elements */
 
+a:active {
+  border: none;
+}
+
 p {
   font-size: 1.5rem;
   line-height: 130%;
 }
 
-#wrapper {
-  height: 100%;
+menu[type="toolbar"] a {
+  text-decoration: none;
+}
+
+ol.link-list label,
+ol.link-list a {
+  display: block;
+  min-height: 5.5rem;
+  line-height: 5.5rem;
+  font-size: 1.7rem;
+  padding: 0 1.5rem;
+  border-bottom: 0.1rem solid #C5C5C5;
+  text-decoration: none;
+  color: #000;
+  margin: 0 1.5rem;
+}
+
+ol.link-list li:last-child label,
+ol.link-list li:only-child label,
+ol.link-list li:last-child a,
+ol.link-list li:only-child a {
+  border-bottom: 0;
 }
 
 /* view management */
 
-#views {
-  background: white;
-  height: -moz-calc(100% - 8rem);
+#modify-event-view {
+  display: none;
 }
 
-#views > section {
-  display: none
+#modify-event-view.active {
+  display: block;
 }
 
+#time-views {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 
-#views > section.active {
+#time-views > section {
+  display: none;
+  background: #fff;
+  height: calc(100% - 9rem);
+}
+
+#time-views > section.active {
   display: block;
 }
 
@@ -70,7 +78,7 @@ p {
   height: 100%;
   display: block;
   position: absolute;
-  z-index: 100;
+  z-index: 200;
   background-color: #CCC;
   opacity: 0.5;
   text-align: center;
@@ -79,90 +87,151 @@ p {
 
 /* view heights */
 
-#month-view {
-  height: 65%;
+#time-views > #month-view {
+  height: auto;
 }
 
-#month-days-view {
-  height: 35%;
+#time-views > #months-day-view {
+  flex: 1;
 }
 
-
-/* temp views */
-
-#day-view,
-#week-view {
-  text-align: center;
-  padding-top: 5rem;
+#progress-indicator {
+  position: absolute;
+  top: 6.9rem;
+  left: 0;
+  width: 100%;
+  height: 0.3rem;
+  border: none;
+  overflow: hidden;
+  z-index: 1000;
+  display: none;
 }
 
+.pending-operation #progress-indicator {
+  display: block
+}
+
+#throbber {
+  height: 5.2rem;
+  background: url('ui/progress.png') repeat-x left bottom / 32rem !important;
+  animation: .5s throb infinite steps(12);
+}
+
+@keyframes throb {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(0, -4.8rem);
+  }
+}
+
+#advanced-settings-view .content {
+  height: calc(100% - 5rem);
+  overflow-y: scroll;
+}
+
+#advanced-settings-view .settings-list label {
+  height: auto;
+  margin: 0 1.5rem;
+  padding: 0.5rem 0 1.5rem;
+  line-height: 100%;
+}
+
+#advanced-settings-view .settings-list label span {
+  display: block;
+  position: relative;
+  margin-bottom: 0;
+  font-size: 1.9rem;
+  line-height: 3.3rem;
+}
+
+#advanced-settings-view .settings-list label .button {
+  height: 4rem;
+}
+
+#advanced-settings-view .settings-list label select {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(100% + 3rem);
+  padding: 0.8rem 1rem 0;
+  font-size: 1.7rem;
+  font-weight: 500;
+}
+
+#advanced-settings-view .settings-list label span:first-child {
+  padding-left: 1.5rem;
+}
+
+#advanced-settings-view .settings-list label,
+#advanced-settings-view .account-list a {
+  text-transform: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  width: calc(100% - 3rem);
+}
+
+#advanced-settings-view .account-list a {
+  padding-right: 4rem;
+}
+
+#advanced-settings-view .account-list .error a {
+  background: transparent url('icons/accountwarning.png') no-repeat left;
+  padding-left: 3.5rem;
+}
+
+#advanced-settings-view .preset:after {
+  content: ' - '
+}
+
+#advanced-settings-view .user {
+  width: 50%;
+}
+
+#advanced-settings-view header.account-list-header.active {
+  display: block;
+}
+
+#advanced-settings-view header.account-list-header {
+  display: none;
+}
 
 /* create account view */
-
-#create-account-view > header {
-  margin-bottom: 4rem;
-}
-
-#create-account-view > ol,
 #create-account-view > p {
   margin: 0 2rem;
 }
 
-#create-account-view > ol {
-  margin-top: 3rem;
+.fullscreen-view.active {
+  visibility: visible;
 }
-
-#create-account-view > ol a {
-  display: block;
-  width: 100%;
-  height: 4.1rem;
-  line-height: 150%;
-  font-size: 1.3rem;
-  font-weight: bold;
-  padding: 1.2rem;
-  margin-bottom: 1rem;
-  background: -moz-linear-gradient(#F4F4F4, #C3C3C3);
-  border: 1px solid #B0B0B0;
-  text-decoration: none;
-  color: #333;
-}
-
-/* add event view */
 
 .fullscreen-view {
+  z-index: 1000;
+  overflow: hidden;
+  visibility: hidden;
   /* completely override other views */
-  background: white;
-  z-index: 10;
+  background-color: #f4f4f4;
   position: absolute;
-  top: 0px;
+  top: 0;
   width: 100%;
   height: 100%
 }
 
-.rtl header a.cancel,
-.ltr header a.save {
-  text-align: right;
-}
-
-.ltr header a.cancel,
-.rtl header a.save {
-  text-align: left;
-}
-
-/* common top toolbars */
-
-
-/* month view */
 /* sub common: day headers, day boxes */
 
 #month-days {
-  overflow: hidden;
+  overflow: scroll;
 }
 
 #month-view .month li,
 #month-days li {
-  width: 14.28%;
+  width: 14.286%;
   line-height: 120%;
+  -moz-user-select: none;
 }
 
 .rtl #month-days li,
@@ -178,19 +247,20 @@ p {
 /* sub: day header row */
 
 #month-days {
-  height: 1.45rem;
-  clear: both;
+  overflow: hidden;
 }
 
+#week-view .day-header,
 #month-days li {
+  height: 2rem;
   color: white;
   text-align: center;
-  background-color: #1F2630;
+  background-color: #242931;
   text-transform: uppercase;
-  font-size: 90%;
+  font-size: 1.3rem;
   padding: 0.185rem 0;
-  border-right: 1px solid #131314;
-  border-left: 1px solid #515051;
+  border-right: 0.1rem solid #131314;
+  border-left: 0.1rem solid #515051;
 }
 
 #month-days li:first-child {
@@ -201,30 +271,27 @@ p {
   border-right: none;
 }
 
-#month-displays {
-  height: -moz-calc(100% - 1.45rem);
+body[data-path^="/month/"] section.month.next,
+body[data-path^="/month/"] section.month.previous {
+  display: block !important;
 }
 
 section.month {
   height: 100%;
-  clear: both;
   color: #484848;
+  border-left: 0.1rem solid #AAA;
+  border-right: 0.1rem solid #AAA;
+  display: none;
 }
 
 /* sub: day rows */
 
-section.month.inactive {
-  display: none
-}
-
-section.month {
-  overflow: hidden;
-  border-left: 1px solid #AAA;
-  border-right: 1px solid #AAA;
+section.month.active {
+  display: block;
 }
 
 section.month li > .day {
-  font-size: 1.30rem;
+  font-size: 1.5rem;
   line-height: 140%;
 }
 
@@ -245,9 +312,25 @@ section.month li > .day {
 }
 
 section.month ol {
-  height: 20%;
+  height: 4.5rem;
 }
 
+section.month #month-days ol {
+  height: auto;
+}
+
+/* Make the rows a bit taller for larger resolutions */
+@media (min-device-height: 640px) {
+  section.month ol {
+    height: 6rem;
+  }
+}
+
+section.month ol:last-child {
+  box-shadow: 0px 5px 5px 0px rgba(1, 1, 1, 0.2);
+  position: relative;
+  z-index: 200;
+}
 
 section.month li:first-child {
   border-left: none;
@@ -260,10 +343,10 @@ section.month li:last-child {
 section.month li {
   padding-top: 0.3%;
 
-  border-right: 1px solid #A4A4A4;
-  border-left: 1px solid #FDFDFD;
-  border-top: 1px solid white;
-  border-bottom: 1px solid #9D9D9D;
+  border-right: 0.1rem solid #A4A4A4;
+  border-left: 0.1rem solid #FDFDFD;
+  border-top: 0.1rem solid white;
+  border-bottom: 0.1rem solid #9D9D9D;
   height: 100%;
   position: relative;
   background-color: white;
@@ -274,16 +357,20 @@ section.month ol:last-child li {
 }
 
 section.month li.past {
-  background-color: #E7E7E7;
-  color: #9A9A9A;
+  background-color: #E6E6E6;
+  color: #484848;
 }
 
 section.month li.present {
   background-color: #525963;
-  box-shadow: inset 1px 2px 3px 0px #333;
+  box-shadow: inset 0.1rem 0.2rem 0.3rem 0 #333;
   color: white;
   border-left: none;
   border-top: none;
+}
+
+section.month li.future {
+  background-color: #E6E6E6;
 }
 
 section.month li.selected {
@@ -291,9 +378,15 @@ section.month li.selected {
   background-color: #1BA8C6 !important;
 }
 
-section.month li.other-month {
-  color: #9A9A9A;
+section.month li.past.other-month {
+  background-color: #C1C1C1;
 }
+
+section.month li.future.other-month {
+  background-color: #C1C1C1;
+}
+
+
 
 /* sub day rows: busy indicators */
 
@@ -306,7 +399,7 @@ section.month li .busy-indicator > span{
 section.month li .busy-indicator {
   overflow: hidden;
   clear: both;
-  bottom: 0px;
+  bottom: 0;
   position: absolute;
   width: 100%;
 }
@@ -317,9 +410,7 @@ section.month li .busy-indicator:before {
 }
 
 section.month li .busy-indicator > span {
-  top: 0px;
-  width: 8.33%;
-  background-color: #FCA900;
+  top: 0;
   position: absolute;
   text-indent: -1000em;
 }
@@ -327,6 +418,19 @@ section.month li .busy-indicator > span {
 /**
 Indicators are in units of 12
 */
+.busy-length-1 { width: 8.33%; }
+.busy-length-2 { width: 16.66%; }
+.busy-length-3 { width: 24.990000000000002%; }
+.busy-length-4 { width: 33.32%; }
+.busy-length-5 { width: 41.65%; }
+.busy-length-6 { width: 49.980000000000004%; }
+.busy-length-7 { width: 58.31%; }
+.busy-length-8 { width: 66.64%; }
+.busy-length-9 { width: 74.97%; }
+.busy-length-10 { width: 83.3%; }
+.busy-length-11 { width: 91.63%; }
+.busy-length-12 { width: 100%; }
+
 /* ltr busy units */
 .ltr .busy-indicator .busy-1 { left: 0%; }
 .ltr .busy-indicator .busy-2 { left: 8.33%; }
@@ -357,149 +461,65 @@ Indicators are in units of 12
 .rtl .busy-indicator .busy-12 { right: 91.63%; }
 
 /* sub: months day view */
-
-#months-day-view {
-  background-color: white;
-  height: -moz-calc(50% - 1.295rem);
-}
-
-#months-day-view .day-events {
-  height: -moz-calc(100% - 6.5rem);
-  overflow-y: auto;
-}
-
 #months-day-view  h1 {
-  letter-spacing: 0.05rem;
-  font-size: 1.1rem;
-  padding: 0.4rem 1.2rem 0.7rem;
-  text-transform: uppercase;
-  font-family: 'Open Sans';
-  font-weight: light;
+  padding: 0.2rem 1.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 2.8rem;
   color: #F93700;
-  border-bottom: 1px solid #F93700;
-  box-shadow: 0px 4px 5px -1px #888 inset;
-  padding-top: 1rem;
+  border-bottom: 0.1rem solid #F93700;
 }
 
-/** sub: view selector **/
-
-#bottom-toolbar,
-#view-selector li,
-#view-selector,
-#view-selector menu {
-  height: 3.33rem;
+/* [BB][tabs]*/
+body[data-path="/month/"] #view-selector > .month,
+body[data-path="/week/"] #view-selector > .week,
+body[data-path="/day/"] #view-selector > .day {
+  background: #fff;
 }
 
-#bottom-toolbar {
-  height: 3.33rem;
-  background: #949494;
+body[data-path="/month/"] #view-selector > .month > a,
+body[data-path="/week/"] #view-selector > .week > a,
+body[data-path="/day/"] #view-selector > .day > a {
+  color: #000;
+  font-weight: 500;
 }
 
 #view-selector {
-  line-height: 2.1rem;
-  overflow: hidden;
-  box-shadow: 0px 0 0.5px 0.5px #6F7070;
+  bottom: auto;
 }
 
-#view-selector a {
-  text-decoration: none;
-  color: #444;
+#view-selector > li > a {
+  outline: none;
 }
 
-.rtl #view-selector li {
-  float: right;
+#view-selector > li > a:active {
+  background-color: #008aaa;
+  color: #fff;
 }
 
-.ltr #view-selector li {
-  float: left;
+@keyframes fade-status {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
 }
 
-#view-selector > li.toggle-settings,
-#view-selector > li.today {
-  width: 25%;
-  height: 3.33rem;
-  background-image: -moz-linear-gradient(#D9D9D9, #969696);
-  border-right: 1px solid black;
-}
-
-.rtl #view-selector > li.toggle-settings,
-.rtl #view-selector > li.today {
-  border-left: 1px solid #666;
-}
-
-
-#view-selector > li.toggle-settings,
-body[data-path="/settings/"] #view-selector .today {
+section[role="status"] {
   display: none;
 }
 
-body[data-path^="/settings/"] #view-selector .toggle-settings {
-  display: block !important;
-}
-
-.ltr #view-selector > li.toggle-settings,
-.ltr #view-selector > li.today {
-  border-right: 1px solid #666;
-}
-
-#view-selector > li.time-selection {
-  width: 75%;
-}
-
-/**  Selected items */
-body[data-path="/day/"] #view-selector .day,
-body[data-path="/week/"] .time-selection .week,
-body[data-path="/month/"] .time-selection .month {
-  background-color: white;
-  color: black;
-}
-
-body[data-path="/day/"] #view-selector .day a,
-body[data-path="/week/"] #view-selector .week a,
-body[data-path="/month/"] #view-selector .month a {
-  color: black;
-}
-
-#view-selector > li a {
-  padding: 0.55rem 0.74rem;
+section[role="status"].active {
   display: block;
+  animation-name: fade-status;
+  animation-delay: 2.5s;
+  animation-duration: 1.5s;
 }
 
-#view-selector > li {
-  height: 2.18rem;
-  text-align: center;
-  font-weight: bold;
-  color: black;
-  display: block;
-  width: 100%;
-  font-size: 1.2rem;
+/* Hide on initial render to prevent flashing */
+#settings {
+  visibility: hidden;
 }
 
-#view-selector menu li {
-  width: 33%;
-}
-
-#view-selector menu li:last-child {
-  width: 34%;
-}
-
-@media screen and (min-width: 481px) {
-  html, body {
-    font-size: 12px;
-  }
-
-  #month-view {
-    height: 55%;
-  }
-
-  #month-days-view {
-    height: 45%;
-  }
-
-}
-
-@media screen and (max-width: 480px) {
-  html, body {
-    font-size: 10px;
-  }
-}

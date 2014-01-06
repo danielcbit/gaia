@@ -6,78 +6,221 @@ html {
   padding: 0;
   margin: 0;
   overflow: hidden;
+  font-size: 10px;
 }
 
 body {
-  background-color: #000;
-  color: #fff;
-  font-family: "Open Sans", sans-serif;
-  font-size: 20px;
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
-  height: 100%;
-  width: 100%;
+  color: #fff;
+  font-size: 1rem;
+  background-color: #0E1214;
   overflow: hidden;
-  padding-bottom: 50px;
+}
+
+section {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-size: 1.4rem;
+}
+
+.large-only {
+  display: none;
+}
+
+.hidden {
+  display: none;
+}
+
+#thumbnails-list-top {
+  display: none;
 }
 
 /* All of the main views fill the screen */
-#thumbnail-list-view, #thumbnail-select-view, #photo-view, #edit-view {
+#thumbnail-list-view, #thumbnail-select-view, #fullscreen-view, #pick-view, #edit-view, #crop-view {
   position: absolute;
-  top: 0px;
-  left: 0px;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  padding: 0px;
-  margin: 0px;
-  overflow: hidden;
-}
-
-#nophotos {
-  margin: 0;
-  margin-top: 40%;
   padding: 0;
-  width: 100%;
-  text-align: center;
-  font-family: "Open Sans", sans-serif;
-  font-weight: bold;
-  font-size: 26px;
-  color: #fff;
-  -moz-user-select: none;
+  margin: 0;
+  overflow: hidden;
+  font-size: 2.1rem;
+  /* display will be determined by LAYOUT_MODE */
+  display: none;
 }
 
+body.thumbnailListView #thumbnail-list-view,
+body.thumbnailSelectView #thumbnail-select-view,
+body.fullscreenView #fullscreen-view,
+body.pickView #pick-view,
+body.editView #edit-view,
+body.cropView #crop-view {
+  display: block;
+}
+
+/*
+ * The overlay is where we display messages like Scanning, No Photos,
+ * No SD card and SD Card in Use along with instructions for resolving
+ * the issue.  The user can't interact with the app while the overlay
+ * is displayed.
+ */
+#overlay,
+#confirm-dialog {
+  /* it takes up the whole screen */
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+
+  /* almost transparent gray */
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/*
+ * The overlay content area holds the text of the overlay.
+ * It has borders and a less transparent background so that
+ * the overlay text shows up more clearly
+ */
+#overlay-content {
+  background:
+  url(images/ui/pattern.png) repeat left top,
+  url(images/ui/gradient.png) no-repeat left top;
+  background-size: auto auto, 100% 100%;
+  /* We can't use shortand with background size because is not implemented yet:
+  https://bugzilla.mozilla.org/show_bug.cgi?id=570326; */
+  overflow: hidden;
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  font-size: 0;
+  /* Using font-size: 0; we avoid the unwanted visual space (about 3px)
+  created by white-spaces and break lines in the code betewen inline-block elements */
+  color: #fff;
+  padding: 11rem 2.5rem 0 2.5rem;
+}
+
+#overlay-title {
+  font-weight: normal;
+  font-size: 1.9rem;
+  color: #fff;
+  margin: 0 0.5rem 0 0.5rem;
+  padding: 0;
+}
+
+#overlay-text {
+  padding: 1rem 0.5rem 0 0.5rem;
+  border-top: 0.1rem solid #686868;
+  font-weight: 300;
+  font-size: 2.5rem;
+  color: #ebebeb;
+}
+
+#overlay-menu {
+  z-index: 1;
+}
+
+/* For overriding the style from BB */
+#overlay-menu.hidden {
+  display: none;
+}
+
+#overlay-menu button.hidden {
+  display: none;
+}
+
+#overlay-menu button.full {
+  margin: 0;
+}
 
 /*
  * Thumbnails are implemented as <li> elements in a <ul> with background-image
  * set to display the image. We use background-size: cover to automatically
  * resize the image as needed.
- * 
- * The thumbnail list appears in regular browsing mode, in selection mode, 
- * and also in "filmstrip" form in single-photo mode. So the thumbnail list
- * and the individual thumbnails are styled differently depending on 
- * what element they are contained within, and also depending on the phone
- * resolution and orientation (and also language direction).
  */
 
 #thumbnails {
   position: absolute;
+  left: 0;
+  width: 100%;
+  bottom: 0;
+  /* top and bottom are set depending on view below */
   padding: 0;
   margin: 0;
   overflow-y: scroll;
   overflow-x: hidden;
-  /* If we want to scroll up and down, then apparently we have to add */
-  /* some extra width to keep the scrollbar offscreen */
-  width: -moz-calc(100% + 10px);
-  background-color: #000;
+  /*
+   * the body background is black, but remind the UA of that here to
+   * keep the thumbnail view opaque if possible.
+   */
+  background-color: #0E1214;
+  will-change: scroll-position;
+  /*
+   * set it visible/hidden by LAYOUT_MODE
+   */
+  visibility: hidden;
+  pointer-events: none;
 }
 
-.thumbnail {
-  margin: 0;
+/*
+ * The thumbnail list appears in regular browsing mode, in selection mode,
+ * and in pick mode.
+ */
+body.thumbnailSelectView #thumbnails,
+body.pickView #thumbnails,
+body.thumbnailListView #thumbnails {
+  visibility: visible;
+  pointer-events: auto;
+  bottom: 0;
+}
+
+body.thumbnailListView #thumbnails {
+  top: 0;
+}
+
+body.thumbnailSelectView #thumbnails,
+body.pickView #thumbnails {
+  top: 5rem;
+}
+
+.thumbnail-group-header {
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: #8a9699;
+  padding: 0 0 0 0.5rem;
+  height: 4rem;
+  line-height: 4rem;
+  width:100%;
+  float:left;
+}
+.thumbnail-group-container {
   padding: 0;
-  /* borders only on right and bottom */
-  border-right: solid black 1px;
-  border-bottom: solid black 1px;
-  overflow: hidden;
+}
+
+#thumbnails>li {
+  /* no list item bullets */
+  list-style-type: none;
+}
+
+
+#thumbnails>li:first-child .thumbnail-group-header {
+  border-top: 0.1rem solid;
+  border-color:rgba(255,255,255, 0.1);
+}
+
+
+.thumbnail {
+  margin-right: 0.1rem;
+  margin-bottom: 0.1rem;
+  padding: 0;
   /* default to left-to-right, but overridden for rtl languages below */
   float: left;
   /* no list item bullets */
@@ -86,135 +229,129 @@ body {
   -moz-user-select: none;
   /* thumbnail images will be displayed with background-image */
   /* these properties scale and position the images correctly */
-  background-size: cover;        /* allow some cropping */
   background-position: center;   /* keep the cropping at the edges */
+  background-size: contain;
   background-repeat: no-repeat;
+  /*
+   * When we have a background image it will cover the whole thumbnail
+   * but when we're swapping that image in it might be visible before
+   * the image. So we want a color that contrasts with the border so we
+   * at least get the effect of a grid rather than a black screen
+   */
+  background-color: #444;
+
+  /*
+   * Here's the thumbnail size for portrait mode. We have 3 thumbnails
+   * for each row. The size for landscape mode is handled below by
+   * media query.
+   * Padding-bottom is used here in order to set div height with respect
+   * to device width.
+   */
+  width: calc((100% - 0.2rem) / 3 );
+  height: 0;
+  padding-bottom: calc((100% - 0.2rem) / 3 );
+}
+
+.thumbnail:nth-child(3n) {
+  margin-right: 0;
 }
 
 .thumbnail.selected {
-  outline: solid orange 5px;
-  outline-offset: -5px;
-}
-
-/* 320x480 phones */
-@media (orientation: portrait) and (width: 320px) {
-  .thumbnail {
-    width: 107px;
-    height: 107px;
-  }
-}
-
-@media (orientation: landscape) and (width: 480px) {
-  .thumbnail {
-    width: 120px;
-    height: 120px;
-  }
-}
-
-/* 480x800 phones portrait */
-@media (orientation: portrait) and (width: 480px),
-       (orientation: landscape) and (width: 800px) {
-    .thumbnail {
-        width: 160px;
-        height: 160px;
-    }
-}
-
-/* thumbnails in regular thumbnail list view */
-#thumbnail-list-view > #thumbnails {
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 50px;
-}
-
-/* thumbnails in thumbnail select view where there is a top bar */
-#thumbnail-select-view > #thumbnails {
-  top: 50px;
-  left: 0;
-  right: 0;
-  bottom: 50px;
+  outline: solid #00aacc 0.3rem;
+  outline-offset: -0.2rem;
 }
 
 /*
- * In photo view mode, the thumbnail list becomes a "filmstrip"
- * and the thumbnail images become much smaller.
- * JavaScript will set the width of the thumbnails container so that 
- * we get working scrollbars
+ * give the very last thumbnail a large bottom margin so that it doesn't
+ * get stuck hidden behind the overlaid toolbar.
  */
-#photos-filmstrip #thumbnails {
-  left:0;
-  top:0;
-  height:50px;
-  overflow-y: hidden;
-  overflow-x: scroll;
+#thumbnails>li:last-child {
+  margin-bottom: 4.5rem;
 }
 
-#photos-filmstrip li.thumbnail {
-    border-left: solid black 2px;
-    border-right: none;
-    border-top: solid black 2px;
-    border-bottom: solid black 2px;
-    width: 50px;
-    height: 50px;
+@media (orientation: landscape) {
+  /* 4 thumbnails for each row in landscape mode. */
+  .thumbnail {
+    width: calc((100% - 0.3rem) / 4);
+    padding-bottom: calc((100%  - 0.3rem) / 4);
+  }
+  .thumbnail:nth-child(3n) {
+    margin-right: 0.1rem;
+  }
+  .thumbnail:nth-child(4n) {
+    margin-right: 0;
+  }
 }
 
-#photo-frames {
+#fullscreen-back-button-tiny {
   position: absolute;
-  top: 0px;
-  left: 0px;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: 4.5rem;
+  height: 4.5rem;
+  font-size: 0;
+  border-radius: 50%;
+  border: none;
+  color: #605c59;
+  box-shadow: 0 0.1rem 0 inset;
+  background: rgba(114, 111, 106, 0.8) url(images/back.png) no-repeat 50% 50%;
+  transition: opacity 0.2s linear;
+}
+
+#fullscreen-back-button-tiny:active {
+  color: #107788;
+  background-color: #00b0d5;
+}
+
+#frames {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  padding: 0px;
-  margin: 0px;
-  overflow: hidden;
+  padding: 0;
+  margin: 0;
 }
 
-.photoFrame {
+.frame {
   position: absolute;
-  top: 0px;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  padding: 0px;
-  margin: 0px;
+  padding: 0;
+  margin: 0;
   overflow: hidden;
   -moz-user-select: none;
+  will-change: scroll-position;
 }
 
-div.currentPhoto {
-  left: 0px;
-}
-
-/* the next photo is waiting in the wings just off to the right */
-/* We use 102% instead of 100% to give a small black border between photos */
-div.nextPhoto {
-  left: 102%;
-}
-
-/* In RTL languages, the next photo is off to the left */
-*[dir=rtl] div.nextPhoto {
-  left: -102%;
-}
-
-div.previousPhoto {
-  left: -102%;
-}
-
-*[dir=rtl] div.previousPhoto {
-  left: 102%;
-}
-
-.photoFrame > img {
-  position: relative;
-  border-width: 0px;
-  padding: 0px;
-  margin: 0px;
+.frame > img {
+  top: 0;  /* javascript modifies this position with a transform */
+  left: 0;
+  position: absolute;
+  border-width: 0;
+  padding: 0;
+  margin: 0;
   pointer-events: none;
   -moz-user-select: none;
 }
 
-.hidden {
-  display: none;
+/*
+ * these styles apply when we're swapping out a preview image to replace
+ * it with a full-resolution image, but the full image isn't ready yet.
+ * This happens when the user starts to zoom in on the image. We need
+ * some sort of simple visual effect to fill ~500ms of dead time so the
+ * user doesn't think the app has frozen up
+ */
+.frame > img.swapping {
+  opacity: 0.8;
+  outline: dashed #0ac 0.4rem;
+  outline-offset: -0.4rem;
+}
+
+.frame > video {
+  transform-origin: 0 0;
 }
 
 /* localization */
@@ -226,6 +363,37 @@ body.hidden *[data-l10n-id] {
   float: right;
 }
 
+/* the indeterminate progress bar displayed while scanning */
+#progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.3rem;
+  border: none;
+  overflow: hidden;
+  z-index: 10; /* has to be higher than pick-top */
+}
+
+#throbber {
+  height: 2.4rem;
+  background-image: url(images/progress.png);
+  background-size: auto 100%;
+}
+
+#throbber.throb {
+  animation: 1s throb infinite steps(7);
+}
+
+@keyframes throb {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-2.1rem);
+  }
+}
+
 /* buttons */
 a.button {
   display: block;
@@ -234,11 +402,12 @@ a.button {
   border-width: 0;
   background-position: center center;
   background-repeat: no-repeat;
+  background-size: 3rem;
 
   /* for buttons that display text */
-  font-size: smaller;
+  font-size: 1.4rem;
   text-align: center;
-  line-height: 50px;
+  line-height: 4.5rem;
 }
 
 a.button:active, a.button:focus {
@@ -247,15 +416,26 @@ a.button:active, a.button:focus {
 
 a.button.disabled {
   opacity: 0.4;
+  pointer-events: none;
 }
 
-#thumbnails-bottom {
-  background: #888;
-  height: 50px;
+.icon.icon-done {
+  background: url('images/iconaction_done_30x30.png') no-repeat center center / 3rem !important;
+}
+
+footer {
+  background: rgba(0, 0, 0, 0.75);
+  height: 4.5rem;
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 1;
+  box-shadow: 0 -0.2rem 0.5rem rgba(50, 50, 50, 0.75);
+}
+
+.icon.icon-done {
+  background-image: url('images/iconaction_done_30x30.png') !important;
 }
 
 #thumbnails-camera-button {
@@ -263,8 +443,8 @@ a.button.disabled {
   width: 50%;
   height: 100%;
   left: 0;
-  background-image: url('images/camera.png');
-  border-right: 1px solid #000;
+  background-image: url('images/iconaction_camera_30x30.png');
+  border-right: 0.1rem solid #000;
 }
 
 #thumbnails-select-button {
@@ -272,41 +452,7 @@ a.button.disabled {
   width: 50%;
   height: 100%;
   left: 50%;
-  background-image: url('images/select.png');
-}
-
-#thumbnails-select-top {
-  background: #888;
-  height: 50px;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-#thumbnails-cancel-button {
-  position: absolute;
-  width: 25%;
-  height: 100%;
-  left: 0;
-  background-image: url('images/cancel.png');
-}
-
-#thumbnails-number-selected {
-  position: absolute;
-  width: 75%;
-  height: 100%;
-  left: 25%;
-  margin-top: 10px;
-}
-
-#thumbnails-select-bottom {
-  background: #888;
-  height: 50px;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  background-image: url('images/iconaction_select_30x30.png');
 }
 
 #thumbnails-delete-button {
@@ -314,8 +460,8 @@ a.button.disabled {
   width: 50%;
   height: 100%;
   left: 0;
-  background-image: url('images/delete.png');
-  border-right: 1px solid #000;
+  background-image: url('images/iconaction_delete_30x30.png');
+  border-right: 0.1rem solid #000;
 }
 
 #thumbnails-share-button {
@@ -323,148 +469,122 @@ a.button.disabled {
   width: 50%;
   height: 100%;
   left: 50%;
-  background-image: url('images/share.png');
+  background-image: url('images/iconaction_share_30x30.png');
 }
 
-#photos-overlay-top {
-  position: absolute;
-  height: 50px;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.4);
-  /* the filmstrip is taller than 50px so we can hide its scrollbar */
-  overflow: hidden; 
-}
-
-#photos-filmstrip {
-  position: absolute;
-  height: 100%;
-  left: 0;
-  right: 60px; /* 50px plus extra for the scrollbar we don't want to see */
-  overflow-x: scroll;
-  overflow-y: hidden;
-}
-
-#photos-back-button {
-  position: absolute;
-  width: 50px;
-  height: 100%;
-  right: 0;
-  background-image: url('images/gallery.png');
-}
-
-
-#photos-overlay-bottom {
-  background: rgba(0, 0, 0, 0.4);
-  height: 50px;
+#fullscreen-toolbar {
+  height: 4.5rem;
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
+  font-size: 0;
+  transition: transform 0.2s linear;
+}
+/* only for large screen */
+#fullscreen-toolbar-header {
+  display: none;
 }
 
-#photos-camera-button {
-  position: absolute;
-  width: 25%;
+#fullscreen-toolbar-header > menu {
+  display: none;
+}
+
+#fullscreen-toolbar > a {
+  display: inline-block;
+  width: 20%;
   height: 100%;
+}
+
+#fullscreen-view.toolbar-hidden #fullscreen-toolbar {
+  transform: translate(0, 4.5rem);
+}
+
+#fullscreen-view.toolbar-hidden #fullscreen-back-button-tiny {
+  opacity: 0;
+}
+
+#pick-top {
+  /*
+   * we want the user to be able to push the back button even if
+   * an overlay is displayed, so be sure that this titlebar/toolbar
+   * is above the overlay
+   */
+  z-index: 2;
+}
+
+/* like .frame */
+#crop-frame {
+  position: absolute;
+  top: 5rem;
+  bottom: 0;
   left: 0;
-  background-image: url('images/camera.png');
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  -moz-user-select: none;
 }
 
-#photos-edit-button {
-  position: absolute;
-  width: 25%;
-  height: 100%;
-  left: 25%;
-  background-image: url('images/edit.png');
-}
 
-#photos-share-button {
-  position: absolute;
-  width: 25%;
-  height: 100%;
-  left: 50%;
-  background-image: url('images/share.png');
-}
-
-#photos-delete-button {
-  position: absolute;
-  width: 25%;
-  height: 100%;
-  left: 75%;
-  background-image: url('images/delete.png');
-}
-
-#edit-view {
-  background: #888;
-}
-
-#edit-header {
-  background: #ccc;
-  position: absolute;
-  height: 50px;
-  top: 0;
+/* copied from .frame > img */
+#crop-image {
+  top: 0;  /* javascript modifies this position with a transform */
   left: 0;
-  right: 0;
-}
-
-#edit-cancel-button {
-  position: absolute;
-  width: 25%;
-  height: 100%;
-  left: 0;
-  background-image: url('images/cancel.png');
-}
-
-#edit-title {
-  position: absolute;
-  width: 50%;
-  height: 100%;
-  left: 25%;
-  border-left: 1px solid black;
-  border-right: 1px solid black;
-  line-height: 50px;
-  vertical-align: 75%;
-  text-align: center;
-  font-variant: small-caps;
-}
-
-#edit-save-button {
-  position: absolute;
-  width: 25%;
-  height: 100%;
-  right: 0;
+  position: relative;
+  border-width: 0;
+  padding: 0;
+  margin: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  -moz-user-select: none;
 }
 
 #edit-preview-area {
   position: absolute;
-  top: 60px;     /* 10 pixel top margin */
-  bottom: 110px; /* 10 pixel bottom margin */
-  left: 10px;    /* 10 pixel left margin */
-  right: 10px;   /* 10 pixel right margin */
+  left: 0;
+  right: 0;
+  top: 5rem;
+  bottom: 9.5rem; /* 4.5rem for edit-toolbar, 5rem for edit-options */
 }
 
-#edit-preview-image {
+#edit-preview-canvas {
   position: absolute;
-  /* size and position is set by js */
+  top: 1.5rem;
+  left: 1.5rem;
+  width: calc(100% - 3rem);  /* I can't do right: 1.5rem here. Bug? */
+  height: calc(100% - 3rem);  /* can't just set bottom: 1.5rem here */
+}
+
+#edit-crop-canvas {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
 }
 
 #edit-options {
   position: absolute;
   left: 0;
   width: 100%;
-  height: 50px;
-  bottom: 50px;
-  background: #ccc;
+  height: 5rem;
+  bottom: 4.5rem;
+  background: url(images/options-background.png);
 }
 
-/* All the effects buttons share these styles */
-#edit-effect-options > a.button {
+/* The progress has higer selectivity css in progress.css to control display.
+ * The hidden attribute in progress is not working in this case. We need to use
+ * css to override it. */
+#save-progress.hidden {
+  display: none;
+}
+
+/* All the effect options radio buttons share these styles */
+#edit-effect-options a.radio.button {
   position: absolute;
   display: block;
   top: 0;
-  width: 33.3%;
   height: 100%;
   background-size: cover;
   background-position: center;
@@ -472,105 +592,243 @@ a.button.disabled {
   margin: 0;
   padding: 0;
   border-width: 0;
-  border-right: solid black 1px;
-  padding-top: 15px;
+  border-right: solid black 0.1rem;
   overflow: hidden;
 }
 
-#edit-effect-options > a.button.selected {
-  outline: solid orange 3px;
-  outline-offset: -3px;
+#edit-effect-options a.selected.radio.button {
+  outline: solid #00aacc 0.2rem;
+  outline-offset: -0.2rem;
+}
+
+#edit-crop-options a.button {
+  position: absolute;
+  display: block;
+  top: 0;
+  bottom: 0;
+  width: 20%;
+  margin: 0;
+  padding: 0;
+  border-width: 0;
+  border-right: solid black 0.1rem;
+  overflow: hidden;
+  padding-top: 1.6rem;
+  font-size: 1.4rem;
+  background-position: center;
+}
+
+#edit-crop-options a.selected.radio.button {
+  outline: solid #00aacc 0.2rem;
+  outline-offset: -0.2rem;
+}
+
+#edit-crop-none {
+  left: 0;
+  background-image: url('images/iconaction_undo_30x30.png');
+}
+#edit-crop-aspect-free {
+  left: 20%;
+  background-image: url('images/iconaction_camera_freecrop_30x30.png');
+}
+#edit-crop-aspect-portrait {
+  left: 40%;
+  background-image: url('images/iconaction_camera_crop2x3_30x30.png');
+}
+#edit-crop-aspect-landscape {
+  left: 60%;
+  background-image: url('images/iconaction_camera_crop3x2_30x30.png');
+}
+#edit-crop-aspect-square {
+  left: 80%;
+  background-image: url('images/iconaction_camera_crop1x1_30x30.png');
+}
+
+/* instead of using images inside the buttons above, just draw boxes */
+#edit-free-frame {
+  margin-left: 0.5rem;
+  margin-top: 0.5rem;
+  width: 3rem;
+  height: 2.5rem;
+  border: dotted white 0.1rem;
+}
+
+#edit-portrait-frame {
+  margin-left: 1.1rem;
+  margin-top: 0.6rem;
+  width: 2.6rem;
+  height: 3.9rem;
+  border: solid white 0.1rem;
+}
+
+#edit-landscape-frame {
+  margin-left: 0.5rem;
+  margin-top: 1.2rem;
+  width: 3.9rem;
+  height: 2.6rem;
+  border: solid white 0.1rem;
+}
+
+#edit-square-frame {
+  margin-left: 0.8rem;
+  margin-top: 0.9rem;
+  width: 3.2rem;
+  height: 3.2rem;
+  border: solid white 0.1rem;
+}
+
+/* All the effects radio buttons share these styles */
+#edit-effect-options > a.radio.button {
+  width: 20%;
+  padding-top: 1.5rem;
 }
 
 #edit-effect-none {
   left:0;
 }
 #edit-effect-bw {
-  left:33.3%
+  left:20%
 }
 #edit-effect-sepia {
-  left:66.6%
+  left:40%
 }
-
-/* All the border buttons share these styles */
-#edit-border-options > a.button {
-  display: inline-block;
-  width: 45px;
-  height: 45px;
-  margin-left: 5px;
-  margin-right: 5px;
-  margin-top: 2px;
-  margin-bottom: 3px;
-
-  background-size: cover;        /* allow some cropping */
-  background-position: center;   /* keep the cropping at the edges */
-  background-repeat: no-repeat;
+#edit-effect-bluesteel {
+  left:60%
 }
-
-#edit-border-options > a.button.selected {
-  outline: solid orange 3px;
+#edit-effect-faded {
+  left:80%
 }
-
-#edit-effect-options {
-}
-
-#edit-border-options {
-}
-
 a.filter-bw {
   filter: url(../index.html#filter-bw);
 }
 a.filter-sepia {
   filter: url(../index.html#filter-sepia);
 }
-
-a.border-thin-white {
-  border: 2px solid white;  
+a.filter-bluesteel {
+  filter: url(../index.html#filter-bluesteel);
 }
-a.border-thick-white {
-  border: 4px solid white;  
+a.filter-faded {
+  filter: url(../index.html#filter-faded);
 }
-a.border-thin-black {
-  border: 2px solid black;  
-}
-a.border-thick-black {
-  border: 4px solid black;  
-}
-
 
 #edit-toolbar {
-  background: #888;
-  height: 50px;
+  height: 4.5rem;
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
+  font-size: 0;
+  transition: transform 0.2s linear;
 }
 
 /* all buttons in the toolbar share these styles */
-#edit-toolbar > .button {
-  position: absolute;
-  width: 33.3%;
+#edit-toolbar > a {
+  display: inline-block;
+  width: 25%;
   height: 100%;
-  border-right: 1px solid #000;
-  background: #666;
-}
-
-/* If the button is selected, it has a different background */
-#edit-toolbar > .button.selected {
-  background: #999;
 }
 
 #edit-exposure-button {
   left: 0;
 }
 
+#edit-crop-button {
+  left: 20%;
+}
+
 #edit-effect-button {
-  left: 33.3%
+  left: 40%;
 }
 
 #edit-border-button {
-  left: 66.6%
+  left: 60%;
+}
+
+#edit-enhance-button {
+  left: 80%;
+}
+
+#edit-enhance-options {
+  line-height: 5.5rem;
+  text-align: center;
+}
+#fullscreen-camera-button-tiny {
+  background-image: url('images/iconaction_camera_30x30.png');
+}
+
+#fullscreen-edit-button-tiny {
+  background-image: url('images/iconaction_camera_editphoto_30x30.png');
+}
+
+#fullscreen-share-button-tiny {
+  background-image: url('images/iconaction_share_30x30.png');
+}
+
+#fullscreen-info-button-tiny {
+  background-image: url('images/iconaction_media_info_30x30.png');
+}
+
+#fullscreen-delete-button-tiny {
+  background-image: url('images/iconaction_delete_30x30.png');
+}
+
+#edit-exposure-button {
+  background-image: url('images/actionicon_gallery_edit_exposure_30x30.png');
+}
+
+#edit-crop-button {
+  background-image: url('images/actionicon_gallery_edit_crop_30x30.png');
+}
+
+#edit-effect-button {
+  background-image: url('images/actionicon_gallery_edit_effects_30x30.png');
+}
+
+#edit-border-button {
+  background-image: url('images/actionicon_gallery_edit_borders_30x30.png');
+}
+
+#edit-enhance-button {
+  background-image: url('images/actionicon_gallery_edit_enhance_30x30.png');
+}
+
+#edit-effect-button.selected{
+  background-image: url('images/actionicon_gallery_edit_effect_selected_30x30.png');
+}
+
+#edit-crop-button.selected {
+  background-image: url('images/actionicon_gallery_edit_crop_selected_30x30.png');
+}
+
+#edit-exposure-button.selected {
+  background-image: url('images/actionicon_gallery_edit_exposure_selected_30x30.png');
+}
+
+#edit-enhance-button.selected {
+  background-image: url('images/actionicon_gallery_edit_enhance_selected_30x30.png');
+}
+
+#edit-enhance-button.on {
+  background-image: url('images/actionicon_gallery_edit_enhance_on_30x30.png');
+}
+
+#edit-enhance-button.selected.on {
+  background-image: url('images/actionicon_gallery_edit_enhance_on_selected_30x30.png');
+}
+
+#edit-enhance-options a.button {
+  position: absolute;
+  display: block;
+  top: 0;
+  bottom: 0;
+  width: 20%;
+  margin: 0;
+  padding: 0;
+  border-width: 0;
+  border-right: solid black 0.1rem;
+  overflow: hidden;
+  padding-top: 1.6rem;
+  font-size: 1.4rem;
+  background-position: center;
 }
 
 /*
@@ -583,87 +841,88 @@ a.border-thick-black {
   position: absolute;
   left: 0;
   width: 100%;
-  height: 50px;
-  background-color: #444;
-  font-size: smaller;
+  height: 5rem;
+  font-size: 1.4rem;
 }
 
 #sliderbar {
   position: relative;
-  height: 20px;
+  height: 2.6rem;
   padding: 0;
   margin: 0;
-  overflow: hidden;
+  background: url(images/slider-background.png);
 }
 
 #sliderline {
   position: absolute;
-  height: 2px;
-  top: 50%;
-  left: 10%;
-  right: 10%;
+  height: 0.5rem;
+  top: 1rem;
+  left: 3.5rem;
+  right: 3.5rem;
   margin: 0;
+  border-radius: 3px;
+  background: url(images/slider-line.png) repeat-x;
+  border: none;
 }
 
 #sliderthumb {
   position: absolute;
-  width: 40px;
-  height: 40px;
-  top: -10px;
-  left: -moz-calc(10% - 20px);
-  border-radius: 50%;
-  background-color: #eee;
-  text-align: center;
-  padding-top: 12px;
-  font-size: smaller;
-  color: black;
+  width: 3.6rem;
+  height: 2.6rem;
+  left: calc(3.9rem - 1.8rem);
+  background: url(images/slider-scrubber.png) no-repeat center center;
+  font: 0/0 a;
+}
+
+#sliderthumb.active {
+  background-image: url(images/slider-scrubber-active.png);
 }
 
 #sliderlabels {
   position: relative;
-  height: 30px;
+  height: 3rem;
   padding: 0;
   margin: 0;
-  background-color: #222;
   color: white;
-  border-top: solid #eee 1px;
 }
 
 .sliderlabel {
   position: absolute;
-  top: 0;
-  height: 5px;
-  border-left: solid #eee 1px;
+  top: -0.2rem;
+  height: 0.8rem;
+  background: url(images/slider-marker.png) no-repeat top left;
+  color: #8a9699;
+  font-size: 1.5rem;
 }
 
 .sliderlabel:after {
   content: attr(data-label);
   position: relative;
-  display: block;
   text-align: center;
-  top: 5px;
-  width: 100px;
-  left: -50px;
+  top: 0.9rem;
+  width: 1rem;
+  left: calc(-50%  + 0.1rem);
 }
 
 #slider-3 {
-  left: -moz-calc(10% + 0 * 80%/6);
+  left: 3.9rem;
 }
 #slider-2 {
-  left: -moz-calc(10% + 1 * 80%/6);
+  left: calc(3.9rem + (100% - 2 * 3.9rem) / 6);
 }
 #slider-1 {
-  left: -moz-calc(10% + 2 * 80%/6);
+  left: calc(3.9rem + (100% - 2 * 3.9rem) * 2 / 6);
 }
 #slider0 {
-  left: -moz-calc(10% + 3 * 80%/6);
+  left: calc(3.9rem + (100% - 2 * 3.9rem) * 3 / 6);
+  color: #fff;
 }
 #slider1 {
-  left: -moz-calc(10% + 4 * 80%/6);
+  left: calc(3.9rem + (100% - 2 * 3.9rem) * 4 / 6);
 }
 #slider2 {
-  left: -moz-calc(10% + 5 * 80%/6);
+  left: calc(3.9rem + (100% - 2 * 3.9rem) * 5 / 6);
 }
 #slider3 {
-  left: -moz-calc(10% + 6 * 80%/6);
+  left: calc(3.9rem + (100% - 2 * 3.9rem));
 }
